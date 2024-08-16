@@ -1,0 +1,54 @@
+pub(crate) mod count_down_loop;
+pub(crate) mod global_in_nil_env;
+mod utils;
+
+use crate::context::Context;
+
+use full_moon::ast;
+
+pub(crate) struct PassManager {
+    passes: Vec<Box<dyn Pass>>,
+}
+
+impl PassManager {
+    pub(crate) fn new() -> Self {
+        Self { passes: Vec::new() }
+    }
+
+    pub(crate) fn add_pass(&mut self, pass: Box<dyn Pass>) {
+        self.passes.push(pass);
+    }
+
+    pub(crate) fn run(&mut self, ast: &ast::Ast) {
+        for pass in self.passes.iter_mut() {
+            pass.run(ast);
+        }
+    }
+}
+
+// Lint pass which traverses the AST
+pub(crate) trait Pass {
+    fn ctx(&self) -> &Context;
+    fn name(&self) -> &'static str;
+    fn run(&mut self, ast: &full_moon::ast::Ast);
+}
+
+#[macro_export]
+macro_rules! impl_lint_pass {
+    ($name:literal, $pass:ty) => {
+        use $crate::pass::Pass;
+        impl Pass for $pass {
+            fn ctx(&self) -> &$crate::context::Context {
+                &self.ctx
+            }
+
+            fn name(&self) -> &'static str {
+                $name
+            }
+
+            fn run(&mut self, ast: &full_moon::ast::Ast) {
+                self.visit_ast(ast);
+            }
+        }
+    };
+}
