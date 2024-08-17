@@ -21,24 +21,27 @@ fn main() {
 
     log::debug!("input file: {:?}", args.input_file);
 
-    let mut file = OpenOptions::new()
+    let Ok(mut file) = OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
         .open(&args.input_file)
         .map_err(|e| log::error!("failed to open file: {}", e))
-        .unwrap();
+    else {
+        std::process::exit(1);
+    };
 
     let mut src = String::new();
-    file.read_to_string(&mut src)
-        .map_err(|e| {
-            log::error!("failed to read file: {}", e);
-        })
-        .unwrap();
+    let Ok(_) = file.read_to_string(&mut src).map_err(|e| {
+        log::error!("failed to read file: {}", e);
+    }) else {
+        std::process::exit(1);
+    };
 
-    let ast = full_moon::parse(&src)
-        .map_err(|e| log::error!("failed to parse file: {}", e))
-        .unwrap();
+    let Ok(ast) = full_moon::parse(&src).map_err(|e| log::error!("failed to parse file: {}", e))
+    else {
+        std::process::exit(1);
+    };
 
     log::debug!("successfully parsed file");
 
@@ -52,5 +55,8 @@ fn main() {
     pass_manager.add_pass(Box::new(pass::global_in_nil_env::GlobalInNilEnv::new(
         Arc::clone(&ctx),
     )));
+    pass_manager.add_pass(Box::new(pass::unicode_name::UnicodeName::new(Arc::clone(
+        &ctx,
+    ))));
     pass_manager.run(&ast);
 }

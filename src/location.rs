@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use full_moon::{
     node::{Node, Tokens},
+    tokenizer::{Token, TokenReference},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -32,6 +33,15 @@ impl Location {
 impl From<Tokens<'_>> for Location {
     fn from(tokens: Tokens) -> Self {
         tokens_to_location(tokens).unwrap_or(Location::dummy())
+    }
+}
+
+impl From<&TokenReference> for Location {
+    fn from(token: &TokenReference) -> Self {
+        let Some(range) = token.range() else {
+            return Location::dummy();
+        };
+        Location::new(range.0.bytes(), range.1.bytes())
     }
 }
 

@@ -13,7 +13,7 @@ use full_moon::{ast, node::Node, visitors::Visitor};
 pub(crate) struct GlobalInNilEnv {
     ctx: Arc<Context>,
 }
-impl_lint_pass!("global-in-nil-env", GlobalInNilEnv);
+impl_lint_pass!("global-in-nil-env", GlobalInNilEnv, LintKind::Diagnostics);
 
 impl GlobalInNilEnv {
     pub fn new(ctx: Arc<Context>) -> Self {
@@ -35,12 +35,16 @@ impl Visitor for GlobalInNilEnv {
                 let loc = Location::from(var.tokens());
                 diagnostics::emit(
                     self,
-                    diag(self, ReportKind::Error, loc,
-                        "Invalid global (`_ENV` is `nil`)".to_string())
-                        .with_label(
-                            Label::new((self.ctx().file_name(), loc.into()))
-                                .with_message("Assignment occurs here".to_string()),
-                        )
+                    diag(
+                        self,
+                        ReportKind::Error,
+                        loc,
+                        "Invalid global (`_ENV` is `nil`)".to_string(),
+                    )
+                    .with_label(
+                        Label::new((self.ctx().file_name(), loc.into()))
+                            .with_message("Assignment occurs here".to_string()),
+                    ),
                 );
             }
         }

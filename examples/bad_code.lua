@@ -7,3 +7,11 @@ end
 
 _ENV = nil
 A = 2
+
+ぽぽぽ = 2
+X = { あ = 1 }
+
+function かかか:a() end
+
+function a:ききき() end
+

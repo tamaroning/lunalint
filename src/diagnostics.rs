@@ -3,12 +3,6 @@ use std::ops::Range;
 use crate::{context::Context, location::Location, pass::Pass};
 use ariadne::{Cache, Color, Fmt, Report, ReportBuilder, ReportKind, Source, Span};
 
-pub(crate) fn emit2<'a>(ctx: &'a Context, report: Report<(&'a str, Range<usize>)>) {
-    let fname = ctx.file_name();
-    let src = ctx.src();
-    report.print((fname, Source::from(src))).unwrap();
-}
-
 pub(crate) fn emit<'a, S>(pass: &'a dyn Pass, report: ReportBuilder<'a, S>)
 where
     S: Span,
@@ -19,7 +13,8 @@ where
     let src = pass.ctx().src();
     report
         .with_help(format!(
-            "for further information visit https://luals.github.io/wiki/diagnostics/#{}",
+            "for further information visit https://luals.github.io/wiki/{}/#{}",
+            pass.kind().as_str(),
             pass.name()
         ))
         .finish()
