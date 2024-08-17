@@ -4,6 +4,7 @@ use full_moon::{
     node::{Node, Tokens},
 };
 
+#[derive(Debug, Clone, Copy)]
 pub struct Location {
     start: usize,
     end: usize,
