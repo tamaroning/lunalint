@@ -1,5 +1,6 @@
 pub(crate) mod context;
 pub(crate) mod diagnostics;
+pub(crate) mod location;
 mod pass;
 
 use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};

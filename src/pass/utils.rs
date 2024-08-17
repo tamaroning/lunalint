@@ -6,22 +6,6 @@ use full_moon::{
     tokenizer::{Symbol, TokenType},
 };
 
-pub(super) fn tokens_range(tokens: Tokens) -> Range<usize> {
-    tokens_to_range(tokens).unwrap_or(0..0)
-}
-
-fn tokens_to_range(mut tokens: Tokens) -> Option<Range<usize>> {
-    let Some(Some(first)) = tokens.next().map(|t| t.range()) else {
-        return None;
-    };
-    let first = first.0.bytes()..first.1.bytes();
-    let Some(Some(last)) = tokens.last().map(|t| t.range()) else {
-        return Some(first);
-    };
-    let last = last.0.bytes()..last.1.bytes();
-    Some(first.start..last.end)
-}
-
 pub(super) fn variable_name(var: &ast::Var) -> Option<&str> {
     match var {
         ast::Var::Name(n) => {

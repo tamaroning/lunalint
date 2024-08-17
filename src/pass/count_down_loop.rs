@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
 use super::utils;
-use crate::{context::Context, diagnostics, impl_lint_pass};
+use crate::{
+    context::Context,
+    diagnostics, impl_lint_pass,
+    location::{self, Location},
+};
 use ariadne::{Label, Report, ReportKind};
 use full_moon::{node::Node, visitors::Visitor};
 
@@ -24,21 +28,20 @@ impl Visitor for CountDownLoop {
         let Some(end) = utils::to_integer(node.end()) else {
             return;
         };
-        // TODO:
         if node.step().is_some() {
             return;
         }
 
         if start > end {
-            let loc = utils::tokens_range(node.index_variable().tokens());
+            let loc = Location::from(node.start().tokens()) + Location::from(node.end().tokens());
             diagnostics::emit(
                 &self.ctx,
-                Report::build(ReportKind::Error, self.ctx().file_name(), loc.start)
+                Report::build(ReportKind::Error, self.ctx().file_name(), loc.start())
                     .with_code(999)
                     .with_message("Count down loop which never reaches end".to_string())
                     .with_label(
-                        Label::new((self.ctx().file_name(), loc))
-                            .with_message("This should be decreasing".to_string()),
+                        Label::new((self.ctx().file_name(), loc.into()))
+                            .with_message(format!("Do you mean `{}, {}, -1`?", start, end)),
                     )
                     .finish(),
             );

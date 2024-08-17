@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
 use super::utils;
-use crate::{context::Context, diagnostics, impl_lint_pass};
+use crate::{
+    context::Context,
+    diagnostics, impl_lint_pass,
+    location::{self, Location},
+};
 use ariadne::{Label, Report, ReportKind};
 use full_moon::{ast, node::Node, visitors::Visitor};
 
@@ -27,14 +31,14 @@ impl Visitor for GlobalInNilEnv {
                 true
             };
             if utils::variable_name(var) == Some("_ENV") && is_nil {
-                let loc = utils::tokens_range(var.tokens());
+                let loc = Location::from(var.tokens());
                 diagnostics::emit(
                     &self.ctx,
-                    Report::build(ReportKind::Error, self.ctx().file_name(), loc.start)
+                    Report::build(ReportKind::Error, self.ctx().file_name(), loc.start())
                         .with_code(999)
                         .with_message("The environment is set to nil".to_string())
                         .with_label(
-                            Label::new((self.ctx().file_name(), loc))
+                            Label::new((self.ctx().file_name(), loc.into()))
                                 .with_message("Assignment occurs here".to_string()),
                         )
                         .finish(),
