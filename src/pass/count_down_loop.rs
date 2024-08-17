@@ -4,7 +4,7 @@ use super::utils;
 use crate::{
     context::Context,
     diagnostics, impl_lint_pass,
-    location::{self, Location},
+    location::{Location},
 };
 use ariadne::{Label, Report, ReportKind};
 use full_moon::{node::Node, visitors::Visitor};

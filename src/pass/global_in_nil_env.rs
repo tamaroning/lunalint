@@ -4,7 +4,7 @@ use super::utils;
 use crate::{
     context::Context,
     diagnostics, impl_lint_pass,
-    location::{self, Location},
+    location::{Location},
 };
 use ariadne::{Label, Report, ReportKind};
 use full_moon::{ast, node::Node, visitors::Visitor};
@@ -22,9 +22,9 @@ impl GlobalInNilEnv {
 
 impl Visitor for GlobalInNilEnv {
     fn visit_assignment(&mut self, node: &ast::Assignment) {
-        let mut vars = node.variables().iter();
+        let vars = node.variables().iter();
         let mut exprs = node.expressions().iter();
-        while let Some(var) = vars.next() {
+        for var in vars {
             let is_nil = if let Some(expr) = exprs.next() {
                 utils::is_nil(expr)
             } else {

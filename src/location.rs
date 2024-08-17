@@ -1,9 +1,7 @@
 use std::ops::Range;
 
 use full_moon::{
-    ast::{self, Expression},
     node::{Node, Tokens},
-    tokenizer::{Symbol, TokenType},
 };
 
 pub struct Location {
@@ -36,9 +34,9 @@ impl From<Tokens<'_>> for Location {
     }
 }
 
-impl Into<Range<usize>> for Location {
-    fn into(self) -> Range<usize> {
-        self.start..self.end
+impl From<Location> for Range<usize> {
+    fn from(val: Location) -> Self {
+        val.start..val.end
     }
 }
 
