@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use super::utils;
 use crate::{
     context::Context,
     diagnostics::{self, diag},
@@ -10,8 +9,7 @@ use crate::{
 use ariadne::{Label, ReportKind};
 use full_moon::{
     ast,
-    node::Node,
-    tokenizer::{TokenKind, TokenReference, TokenType},
+    tokenizer::{TokenReference, TokenType},
     visitors::Visitor,
 };
 

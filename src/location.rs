@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use full_moon::{
     node::{Node, Tokens},
-    tokenizer::{Token, TokenReference},
+    tokenizer::TokenReference,
 };
 
 #[derive(Debug, Clone, Copy)]

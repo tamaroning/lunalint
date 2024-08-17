@@ -1,6 +1,4 @@
-use std::ops::Range;
-
-use crate::{context::Context, location::Location, pass::Pass};
+use crate::{location::Location, pass::Pass};
 use ariadne::{Cache, Color, Fmt, Report, ReportBuilder, ReportKind, Source, Span};
 
 pub(crate) fn emit<'a, S>(pass: &'a dyn Pass, report: ReportBuilder<'a, S>)
