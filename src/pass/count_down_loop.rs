@@ -45,7 +45,7 @@ impl Visitor for CountDownLoop {
                 )
                 .with_label(
                     Label::new((self.ctx().file_name(), loc.into()))
-                        .with_message(format!("Do you mean `{}, {}, -1`?", start, end)),
+                        .with_message(format!("Did you mean `{}, {}, -1`?", start, end)),
                 ),
             );
         }

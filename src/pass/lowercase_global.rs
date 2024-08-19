@@ -39,7 +39,7 @@ fn check_name(pass: &LowercaseGlobal, def_id: NodeId) {
             )
             .with_label(
                 Label::new((pass.ctx().file_name(), loc.into()))
-                    .with_message("Dis you miss `local` or misspell it?".to_string()),
+                    .with_message("Did you miss `local` or misspell it?".to_string()),
             ),
         );
     }

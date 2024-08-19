@@ -20,7 +20,7 @@ $ cargo run --release -- examples/bad_code.lua
    │
  3 │ for i = 10, 1 do
    │         ──┬──  
-   │           ╰──── Do you mean `10, 1, -1`?
+   │           ╰──── Did you mean `10, 1, -1`?
    │ 
    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#count-down-loop
 ───╯
@@ -38,7 +38,7 @@ $ cargo run --release -- examples/bad_code.lua
    │
  6 │ foo = { i = 1 }
    │ ─┬─  
-   │  ╰─── Dis you miss `local` or misspell it?
+   │  ╰─── Did you miss `local` or misspell it?
    │ 
    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#lowercase-global
 ───╯
