@@ -3,8 +3,9 @@ pub(crate) mod diagnostics;
 pub(crate) mod location;
 mod pass;
 pub(crate) mod resolver;
+pub(crate) mod utils;
 
-use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
+use std::{borrow::BorrowMut, fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use context::Context;
@@ -47,7 +48,12 @@ fn main() {
 
     log::debug!("successfully parsed file");
 
-    let ctx = Context::new(args.input_file, src);
+    let mut ctx = Context::new(args.input_file, src);
+    ctx.resolver_mut().go(&ast);
+    dbg!(ctx.resolver());
+
+    panic!();
+
     let ctx = Arc::new(ctx);
 
     let mut pass_manager = pass::PassManager::new();

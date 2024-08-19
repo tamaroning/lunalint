@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::utils;
+use crate::utils;
 use crate::{
     context::Context,
     diagnostics::{self, report},

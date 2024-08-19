@@ -1,8 +1,11 @@
 use std::{path::PathBuf, sync::Arc};
 
+use crate::resolver::Resolver;
+
 pub struct Context {
     input_file: Arc<PathBuf>,
     src: Arc<String>,
+    resolver: Resolver,
 }
 
 impl Context {
@@ -10,6 +13,7 @@ impl Context {
         Self {
             input_file: Arc::new(input_file),
             src: Arc::new(src),
+            resolver: Resolver::new(),
         }
     }
 
@@ -19,5 +23,13 @@ impl Context {
 
     pub fn src(&self) -> &str {
         &self.src
+    }
+
+    pub fn resolver(&self) -> &Resolver {
+        &self.resolver
+    }
+
+    pub fn resolver_mut(&mut self) -> &mut Resolver {
+        &mut self.resolver
     }
 }

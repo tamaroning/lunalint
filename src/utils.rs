@@ -1,7 +1,14 @@
 use full_moon::{
     ast::{self, Expression},
-    tokenizer::{Symbol, TokenType},
+    tokenizer::{Symbol, TokenReference, TokenType},
 };
+
+pub(super) fn ident_as_str(token: &TokenReference) -> &str {
+    match token.token_type() {
+        TokenType::Identifier { identifier } => identifier.as_str(),
+        _ => unreachable!(),
+    }
+}
 
 pub(super) fn variable_name(var: &ast::Var) -> Option<&str> {
     match var {

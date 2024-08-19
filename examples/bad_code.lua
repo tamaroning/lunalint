@@ -19,3 +19,4 @@ function かかか:a() end
 
 function a:ききき() end
 
+a.x = 1
