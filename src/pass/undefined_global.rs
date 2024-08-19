@@ -22,44 +22,82 @@ impl UndefinedGlobal {
     }
 }
 
+fn check_name(pass: &UndefinedGlobal, name: &str, use_: NodeId, loc: Location) {
+    if pass.ctx().resolver().lookup_definiton(use_).is_some() {
+        return;
+    }
+    if utils::builtin_names().contains(&name) {
+        return;
+    }
+    let mut report = report(
+        pass,
+        ReportKind::Error,
+        loc,
+        format!("Undefined global `{name}`"),
+    );
+    if let Some(suggestion) = get_wrong_name_suggestion(pass.ctx(), name) {
+        report = report.with_label(
+            Label::new((pass.ctx().file_name(), loc.into()))
+                .with_message(format!("Did you mean `{}`?", suggestion)),
+        );
+    } else {
+        report = report.with_label(
+            Label::new((pass.ctx().file_name(), loc.into()))
+                .with_message("Similar name not found in this scope".to_string()),
+        );
+    }
+
+    diagnostics::emit(pass, report);
+}
+
 impl Visitor for UndefinedGlobal {
+    fn visit_var(&mut self, node: &ast::Var) {
+        let ast::Var::Name(name) = node else {
+            return;
+        };
+        let name = utils::ident_as_str(name);
+        // Allow builtin names to be undefined
+        if utils::builtin_names().contains(&name) {
+            return;
+        }
+
+        let node_id = NodeId::from(node);
+        let loc = Location::from(node.tokens());
+        check_name(self, name, node_id, loc);
+    }
+
     fn visit_prefix(&mut self, prefix: &ast::Prefix) {
         let ast::Prefix::Name(name) = prefix else {
             return;
         };
         let name = utils::ident_as_str(name);
-        let node_id = NodeId::new(prefix);
-        if self.ctx().resolver().lookup_definiton(node_id).is_none() {
-            let loc = Location::from(prefix.tokens());
-            let mut report = report(
-                self,
-                ReportKind::Error,
-                loc,
-                format!("Undefined global `{name}`"),
-            );
-            if let Some(suggestion) = get_wrong_name_suggestion(self.ctx(), name) {
-                if suggestion != name {
-                    report = report.with_label(
-                        Label::new((self.ctx().file_name(), loc.into()))
-                            .with_message(format!("Did you mean `{}`?", suggestion)),
-                    );
-                } else {
-                    report = report.with_label(
-                        Label::new((self.ctx().file_name(), loc.into()))
-                            .with_message("Similar name not found".to_string()),
-                    );
-                }
-            }
-
-            diagnostics::emit(self, report);
+        // Allow builtin names to be undefined
+        if utils::builtin_names().contains(&name) {
+            return;
         }
+
+        let node_id = NodeId::from(prefix);
+        let loc = Location::from(prefix.tokens());
+        check_name(self, name, node_id, loc);
     }
 }
 
 fn get_wrong_name_suggestion<'a>(ctx: &'a Context, name: &str) -> Option<&'a str> {
     let mut min_distance = usize::MAX;
     let mut suggestion: Option<&str> = None;
-    for found in ctx.resolver().get_first_scope().keys() {
+    let mut found_names: Vec<&str> = Vec::new();
+    for scope in ctx.resolver().get_scopes() {
+        for found in scope.keys() {
+            found_names.push(found);
+        }
+    }
+    found_names.extend(utils::builtin_names());
+
+    for found in found_names {
+        if found == name {
+            // Use before definiton
+            continue;
+        }
         let distance = levenshtein_distance(name, found);
         if distance < min_distance {
             min_distance = distance;

@@ -3,6 +3,62 @@ use full_moon::{
     tokenizer::{Symbol, TokenReference, TokenType},
 };
 
+// Basic functions
+// https://www.lua.org/manual/5.4/manual.html#6.1
+// https://github.com/LuaLS/lua-language-server/blob/ba8f90eb0fab18ce8aee2bdbf7007dc63050381d/doc/en-us/config.md?plain=1#L1714
+const BUILTIN_FUNCTIONS: [&str; 24] = [
+    "assert",
+    "collectgarbage",
+    "dofile",
+    "error",
+    "getmetatable",
+    "ipairs",
+    "load",
+    "loadfile",
+    "next",
+    "pairs",
+    "pcall",
+    "print",
+    "rawequal",
+    "rawget",
+    "rawlen",
+    "rawset",
+    "select",
+    "setmetatable",
+    "tonumber",
+    "tostring",
+    "type",
+    "warn",
+    "xpcall",
+    // FIXME: should be here?
+    "require",
+];
+
+const BUILTIN_VARIABLES: [&str; 4] = [
+    "_VERSION", // FIXME: _ENV should be here?
+    "_ENV", "_G", "arg",
+];
+
+const STDLIB_MODULES: [&str; 9] = [
+    "coroutine",
+    "debug",
+    "io",
+    "math",
+    "os",
+    "package",
+    "string",
+    "table",
+    "utf8",
+];
+
+pub fn builtin_names() -> Vec<&'static str> {
+    let mut names = Vec::new();
+    names.extend_from_slice(&BUILTIN_FUNCTIONS);
+    names.extend_from_slice(&BUILTIN_VARIABLES);
+    names.extend_from_slice(&STDLIB_MODULES);
+    names
+}
+
 pub(super) fn ident_as_str(token: &TokenReference) -> &str {
     match token.token_type() {
         TokenType::Identifier { identifier } => identifier.as_str(),

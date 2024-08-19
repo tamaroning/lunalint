@@ -1,16 +1,6 @@
-FuncB = function () end
-function FuncC() end
-pipipi = 1
-pinpin = 2
+local a = 1
+do 
+    local _ENV = 1
+    local a = 1
+end
 
-popopo()
-
-local function a() end
-
-a()
-
-function FuncA() end
-
-FuncA()
-
-local b = 1;

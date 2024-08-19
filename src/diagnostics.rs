@@ -31,6 +31,7 @@ where
     &'a str: Into<<<S as Span>::SourceId as ToOwned>::Owned>,
     (&'a str, Source<&'a str>): Cache<<S as Span>::SourceId>,
 {
+    // Treat error and warning as CLI error for now.
     if kind == ReportKind::Error || kind == ReportKind::Warning {
         pass.ctx().set_saw_error();
     }

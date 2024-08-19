@@ -64,6 +64,9 @@ fn main() {
     pass_manager.add_pass(Box::new(pass::undefined_global::UndefinedGlobal::new(
         Arc::clone(&ctx),
     )));
+    pass_manager.add_pass(Box::new(pass::lowercase_global::LowercaseGlobal::new(
+        Arc::clone(&ctx),
+    )));
     pass_manager.run(&ast);
 
     if ctx.saw_error() {

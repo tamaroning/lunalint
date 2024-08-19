@@ -11,13 +11,11 @@ pub struct Location {
     end: usize,
 }
 
+pub const DUMMY_LOCATION: Location = Location { start: 0, end: 0 };
+
 impl Location {
     pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
-    }
-
-    pub fn dummy() -> Self {
-        Self::new(0, 0)
     }
 
     pub fn start(&self) -> usize {
@@ -39,7 +37,7 @@ impl From<Tokens<'_>> for Location {
 impl From<&TokenReference> for Location {
     fn from(token: &TokenReference) -> Self {
         let Some(range) = token.range() else {
-            return Location::dummy();
+            return DUMMY_LOCATION;
         };
         Location::new(range.0.bytes(), range.1.bytes())
     }
