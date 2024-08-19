@@ -11,14 +11,6 @@ pub struct NodeId {
     private: (usize, usize),
 }
 
-impl NodeId {
-    pub fn dummy() -> Self {
-        NodeId {
-            private: (usize::MAX, usize::MAX),
-        }
-    }
-}
-
 impl std::hash::Hash for NodeId {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.private.0.hash(state);
