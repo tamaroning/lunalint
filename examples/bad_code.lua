@@ -3,9 +3,10 @@ _ENV = nil
 for i = 10, 1 do
 end
 
-t = { i = 1 }
-for i = 10, 1 do
+for i = 1, 10 do
 end
+
+t = { i = 1 }
 
 A = 2
 

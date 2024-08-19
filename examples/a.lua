@@ -5,8 +5,6 @@ pinpin = 2
 
 popopo()
 
-
-
 local function a() end
 
 a()

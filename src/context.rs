@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{atomic::AtomicBool, Arc},
+};
 
 use crate::resolver::Resolver;
 
@@ -6,6 +9,7 @@ pub struct Context {
     input_file: Arc<PathBuf>,
     src: Arc<String>,
     resolver: Resolver,
+    saw_error: AtomicBool,
 }
 
 impl Context {
@@ -14,6 +18,7 @@ impl Context {
             input_file: Arc::new(input_file),
             src: Arc::new(src),
             resolver: Resolver::new(),
+            saw_error: AtomicBool::new(false),
         }
     }
 
@@ -31,5 +36,14 @@ impl Context {
 
     pub fn resolver_mut(&mut self) -> &mut Resolver {
         &mut self.resolver
+    }
+
+    pub fn saw_error(&self) -> bool {
+        self.saw_error.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub fn set_saw_error(&self) {
+        self.saw_error
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }

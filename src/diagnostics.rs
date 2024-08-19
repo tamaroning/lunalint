@@ -31,6 +31,10 @@ where
     &'a str: Into<<<S as Span>::SourceId as ToOwned>::Owned>,
     (&'a str, Source<&'a str>): Cache<<S as Span>::SourceId>,
 {
+    if kind == ReportKind::Error || kind == ReportKind::Warning {
+        pass.ctx().set_saw_error();
+    }
+
     Report::build(kind, pass.ctx().file_name(), loc.start())
         .with_code(999)
         .with_message(format!(
