@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::utils;
 use crate::{
     context::Context,
-    diagnostics::{self, diag},
+    diagnostics::{self, report},
     impl_lint_pass,
     location::Location,
 };
@@ -37,7 +37,7 @@ impl Visitor for CountDownLoop {
             let loc = Location::from(node.start().tokens()) + Location::from(node.end().tokens());
             diagnostics::emit(
                 self,
-                diag(
+                report(
                     self,
                     ReportKind::Error,
                     loc,

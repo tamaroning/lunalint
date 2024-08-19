@@ -1,3 +1,5 @@
+_ENV = nil
+
 for i = 10, 1 do
 end
 
@@ -5,8 +7,10 @@ t = { i = 1 }
 for i = 10, 1 do
 end
 
-_ENV = nil
 A = 2
+
+_ENV = 1
+A, _ENV = 1
 
 ぽぽぽ = 2
 X = { あ = 1 }

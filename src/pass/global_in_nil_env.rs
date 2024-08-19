@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::utils;
 use crate::{
     context::Context,
-    diagnostics::{self, diag},
+    diagnostics::{self, report},
     impl_lint_pass,
     location::Location,
 };
@@ -35,7 +35,7 @@ impl Visitor for GlobalInNilEnv {
                 let loc = Location::from(var.tokens());
                 diagnostics::emit(
                     self,
-                    diag(
+                    report(
                         self,
                         ReportKind::Error,
                         loc,

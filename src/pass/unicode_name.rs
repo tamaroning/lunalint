@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     context::Context,
-    diagnostics::{self, diag},
+    diagnostics::{self, report},
     impl_lint_pass,
     location::Location,
 };
@@ -33,7 +33,7 @@ fn check_name(pass: &UnicodeName, ident_tok: &TokenReference) {
     if !name.chars().all(|c| c.is_ascii()) {
         diagnostics::emit(
             pass,
-            diag(
+            report(
                 pass,
                 ReportKind::Error,
                 loc,

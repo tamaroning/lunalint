@@ -20,7 +20,7 @@ where
         .unwrap();
 }
 
-pub(crate) fn diag<'a, S>(
+pub(crate) fn report<'a, S>(
     pass: &'a dyn Pass,
     kind: ReportKind<'a>,
     loc: Location,

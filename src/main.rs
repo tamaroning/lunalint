@@ -2,10 +2,12 @@ pub(crate) mod context;
 pub(crate) mod diagnostics;
 pub(crate) mod location;
 mod pass;
+pub(crate) mod resolver;
 
 use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 
 use clap::Parser;
+use context::Context;
 
 #[derive(Parser)]
 pub struct Args {
@@ -45,7 +47,7 @@ fn main() {
 
     log::debug!("successfully parsed file");
 
-    let ctx = context::Context::new(args.input_file, src);
+    let ctx = Context::new(args.input_file, src);
     let ctx = Arc::new(ctx);
 
     let mut pass_manager = pass::PassManager::new();
