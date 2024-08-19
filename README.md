@@ -15,18 +15,32 @@ cargo run --release -- <FILE>
 
 ```sh
 $ cargo run --release -- examples/bad_code.lua 
-[999] Error: Count down loop which never reaches end
-   ╭─[bad_code.lua:1:5]
+[999] Error: Count down loop which never reaches end (count-down-loop)
+   ╭─[bad_code.lua:3:9]
    │
- 1 │ for i=10, 1 do
-   │     ┬  
-   │     ╰── This should be decreasing
+ 3 │ for i = 10, 1 do
+   │         ──┬──  
+   │           ╰──── Do you mean `10, 1, -1`?
+   │ 
+   │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#count-down-loop
 ───╯
-[999] Error: The environment is set to nil
-   ╭─[bad_code.lua:5:1]
+[999] Error: Invalid global (`_ENV` is `nil`) (global-in-nil-env)
+   ╭─[bad_code.lua:1:1]
    │
- 5 │ _ENV = nil
+ 1 │ _ENV = nil
    │ ──┬─  
    │   ╰─── Assignment occurs here
+   │ 
+   │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#global-in-nil-env
 ───╯
+[999] Error: Global variable `foo` starts with a lowercase letter (lowercase-global)
+   ╭─[bad_code.lua:6:1]
+   │
+ 6 │ foo = { i = 1 }
+   │ ─┬─  
+   │  ╰─── Dis you miss `local` or misspell it?
+   │ 
+   │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#lowercase-global
+───╯
+lunalint: error: exited with 1 due to previous errors
 ```
