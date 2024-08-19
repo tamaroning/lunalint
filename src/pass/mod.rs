@@ -1,5 +1,6 @@
 pub(crate) mod count_down_loop;
 pub(crate) mod global_in_nil_env;
+pub(crate) mod undefined_global;
 pub(crate) mod unicode_name;
 
 use crate::context::Context;

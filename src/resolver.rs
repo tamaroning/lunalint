@@ -1,13 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use full_moon::tokenizer::TokenType;
 use full_moon::visitors::Visit;
-use full_moon::{
-    ast,
-    node::Node,
-    tokenizer::{Position, TokenReference},
-    visitors::Visitor,
-};
+use full_moon::{ast, node::Node, tokenizer::Position, visitors::Visitor};
 
 use crate::location::Location;
 use crate::utils;
@@ -38,7 +32,7 @@ impl std::fmt::Debug for NodeId {
 }
 
 impl NodeId {
-    fn new(node: &dyn Node) -> Self {
+    pub fn new(node: &dyn Node) -> Self {
         NodeId {
             private: node.range().unwrap(),
         }
@@ -70,7 +64,7 @@ pub enum Visibility {
 #[derive(Debug)]
 pub struct Resolver {
     // Use-Def relations
-    map: HashMap<NodeId, NodeId>,
+    use_defs: HashMap<NodeId, NodeId>,
     // current lexical scope (stack)
     scopes: Vec<HashMap<String, NodeId>>,
     definitions: HashMap<NodeId, Definition>,
@@ -79,7 +73,7 @@ pub struct Resolver {
 impl Resolver {
     pub fn new() -> Self {
         Resolver {
-            map: HashMap::new(),
+            use_defs: HashMap::new(),
             scopes: Vec::new(),
             definitions: HashMap::new(),
         }
@@ -90,8 +84,26 @@ impl Resolver {
         self.visit_ast(ast);
     }
 
-    fn lookup_definiton(&self, use_: &ast::Var) -> Option<()> {
-        todo!()
+    pub fn lookup_definiton(&self, node_id: NodeId) -> Option<&NodeId> {
+        self.use_defs.get(&node_id)
+    }
+
+    pub fn get_definition(&self, def_id: NodeId) -> Option<&Definition> {
+        self.definitions.get(&def_id)
+    }
+
+    pub fn get_first_scope(&self) -> &HashMap<String, NodeId> {
+        assert!(!self.scopes.is_empty());
+        self.scopes.first().unwrap()
+    }
+
+    fn lookup_name(&self, name: &str) -> Option<NodeId> {
+        for scope in self.scopes.iter().rev() {
+            if let Some(node_id) = scope.get(name) {
+                return Some(*node_id);
+            }
+        }
+        None
     }
 
     fn push_scope(&mut self) {
@@ -114,15 +126,6 @@ impl Resolver {
         let scope = self.scopes.first_mut().unwrap();
         scope.insert(name, node_id);
         self.definitions.insert(node_id, def);
-    }
-
-    fn lookup_name(&self, name: &str) -> Option<NodeId> {
-        for scope in self.scopes.iter().rev() {
-            if let Some(node_id) = scope.get(name) {
-                return Some(*node_id);
-            }
-        }
-        None
     }
 }
 
@@ -210,10 +213,10 @@ impl<'a> Visitor for Resolver {
                 node_id,
                 def_node_id
             );
-            self.map.insert(node_id, def_node_id);
+            self.use_defs.insert(node_id, def_node_id);
         } else {
-            // Error. Unresolved name.
-            log::warn!("unresolved name: {}", name);
+            // Unresolved name. Error is emitted by undefined-global pass.
+            log::debug!("unresolved name: {}", name);
         }
     }
 }

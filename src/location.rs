@@ -32,7 +32,7 @@ impl Location {
 
 impl From<Tokens<'_>> for Location {
     fn from(tokens: Tokens) -> Self {
-        tokens_to_location(tokens).unwrap_or(Location::dummy())
+        tokens_to_location(tokens).unwrap()
     }
 }
 

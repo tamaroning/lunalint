@@ -1,6 +1,10 @@
 FuncB = function () end
 function FuncC() end
-a()
+pipipi = 1
+pinpin = 2
+
+popopo()
+
 
 
 local function a() end

@@ -5,7 +5,7 @@ mod pass;
 pub(crate) mod resolver;
 pub(crate) mod utils;
 
-use std::{borrow::BorrowMut, fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
+use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 
 use clap::Parser;
 use context::Context;
@@ -50,12 +50,8 @@ fn main() {
 
     let mut ctx = Context::new(args.input_file, src);
     ctx.resolver_mut().go(&ast);
-    dbg!(ctx.resolver());
-
-    panic!();
 
     let ctx = Arc::new(ctx);
-
     let mut pass_manager = pass::PassManager::new();
     pass_manager.add_pass(Box::new(pass::count_down_loop::CountDownLoop::new(
         Arc::clone(&ctx),
@@ -66,5 +62,8 @@ fn main() {
     pass_manager.add_pass(Box::new(pass::unicode_name::UnicodeName::new(Arc::clone(
         &ctx,
     ))));
+    pass_manager.add_pass(Box::new(pass::undefined_global::UndefinedGlobal::new(
+        Arc::clone(&ctx),
+    )));
     pass_manager.run(&ast);
 }

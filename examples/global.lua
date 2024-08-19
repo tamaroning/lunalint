@@ -2,6 +2,9 @@ print(A)
 
 print(a)
 
+local a = 1
+
+print(a)
 
 function add(a)
     local A = 1
