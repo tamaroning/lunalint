@@ -115,7 +115,6 @@ impl Resolver {
     }
 
     pub fn get_scopes(&self) -> &Vec<HashMap<String, NodeId>> {
-        // _ENV scope and the first lexical scope
         assert!(self.scopes.len() == 1);
         &self.scopes
     }
@@ -138,14 +137,12 @@ impl Resolver {
     }
 
     fn insert_local_definiton(&mut self, name: String, node_id: NodeId, def: Definition) {
-        log::trace!("insert local definition: {}", name);
         let last_scope = self.scopes.last_mut().unwrap();
         last_scope.insert(name, node_id);
         self.definitions.insert(node_id, def);
     }
 
     fn insert_global_definition(&mut self, name: String, node_id: NodeId, def: Definition) {
-        log::trace!("insert global definition: {}", name);
         let first_scope = self.scopes.first_mut().unwrap();
         first_scope.insert(name, node_id);
         self.definitions.insert(node_id, def);
@@ -168,14 +165,6 @@ impl<'a> Visitor for Resolver {
         self.pop_scope();
     }
 
-    fn visit_function_body(&mut self, _node: &ast::FunctionBody) {
-        self.push_scope();
-    }
-
-    fn visit_function_body_end(&mut self, _node: &ast::FunctionBody) {
-        self.pop_scope();
-    }
-
     // local functions (e.g. `local function foo() end`)
     fn visit_local_function(&mut self, node: &ast::LocalFunction) {
         let node_id = NodeId::from(node);
@@ -186,17 +175,37 @@ impl<'a> Visitor for Resolver {
         self.insert_local_definiton(name, node_id, def);
     }
 
-    // global functions
-    fn visit_function_name(&mut self, node: &ast::FunctionName) {
-        if node.names().len() != 1 {
-            return;
+    fn visit_function_declaration(&mut self, node: &ast::FunctionDeclaration) {
+        let function_name = node.name();
+
+        if function_name.names().len() == 1 {
+            let node_id = NodeId::from(function_name);
+            let loc = Location::from(function_name.names().first().tokens());
+            let name = function_name.names().first().unwrap().to_string();
+            log::trace!("insert global function definition {}", name);
+            let def = Definition::new(Visibility::Function, name.clone(), loc);
+            self.insert_global_definition(name, node_id, def)
         }
-        let node_id = NodeId::from(node);
-        let loc = Location::from(node.names().first().tokens());
-        let name = node.names().first().unwrap().to_string();
-        log::trace!("insert global function definition {}", name);
-        let def = Definition::new(Visibility::Function, name.clone(), loc);
-        self.insert_global_definition(name, node_id, def)
+    }
+
+    fn visit_function_body(&mut self, node: &ast::FunctionBody) {
+        self.push_scope();
+        // add parameters
+        for param in node.parameters() {
+            let ast::Parameter::Name(name) = param else {
+                continue;
+            };
+            let node_id = NodeId::from(param);
+            let loc = Location::from(name);
+            let name = utils::ident_as_str(name).to_owned();
+            let def = Definition::new(Visibility::Local, name.clone(), loc);
+            log::trace!("insert function parameter {}", name);
+            self.insert_local_definiton(name, node_id, def);
+        }
+    }
+
+    fn visit_function_body_end(&mut self, _node: &ast::FunctionBody) {
+        self.pop_scope();
     }
 
     fn visit_local_assignment(&mut self, node: &ast::LocalAssignment) {
@@ -235,7 +244,7 @@ impl<'a> Visitor for Resolver {
         };
         let name = utils::ident_as_str(name);
         let node_id = NodeId::from(node);
-        if let Some(def_id) = self.lookup_definiton(node_id) {
+        if let Some(def_id) = self.lookup_name(name) {
             log::debug!("Resolve use of `{name}`: {:?} -> {:?}", node_id, def_id);
             // Register use-def and def-use relation
             self.use_defs.insert(node_id, def_id);
@@ -245,7 +254,7 @@ impl<'a> Visitor for Resolver {
                 .push(node_id);
         } else {
             // Unresolved name. Error is emitted by undefined-global pass.
-            log::debug!("unresolved name: {}", name);
+            log::debug!("unresolved name: `{}`", name);
         }
     }
 
@@ -269,7 +278,7 @@ impl<'a> Visitor for Resolver {
                 .push(node_id);
         } else {
             // Unresolved name. Error is emitted by undefined-global pass.
-            log::debug!("unresolved name: {}", name);
+            log::debug!("unresolved name: `{}`", name);
         }
     }
 }

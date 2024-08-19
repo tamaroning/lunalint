@@ -40,8 +40,10 @@ fn main() {
         std::process::exit(1);
     };
 
-    let Ok(ast) = full_moon::parse(&src).map_err(|e| log::error!("failed to parse file: {}", e))
-    else {
+    let Ok(ast) = full_moon::parse(&src).map_err(|e| {
+        // pretty print parse errors
+        error(format!("failed to parse file: {}", e))
+    }) else {
         std::process::exit(1);
     };
 
