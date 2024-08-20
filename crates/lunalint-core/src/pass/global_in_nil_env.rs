@@ -10,7 +10,7 @@ use crate::{
 use ariadne::{Label, ReportKind};
 use full_moon::{ast, node::Node, visitors::Visitor};
 
-pub(crate) struct GlobalInNilEnv {
+pub struct GlobalInNilEnv {
     ctx: Arc<Context>,
 }
 impl_lint_pass!("global-in-nil-env", GlobalInNilEnv, LintKind::Diagnostics);

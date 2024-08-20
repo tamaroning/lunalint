@@ -13,7 +13,7 @@ use full_moon::{
     visitors::Visitor,
 };
 
-pub(crate) struct UnicodeName {
+pub struct UnicodeName {
     ctx: Arc<Context>,
 }
 impl_lint_pass!("unicode-name", UnicodeName, LintKind::SyntaxError);

@@ -9,7 +9,7 @@ use crate::{
 use ariadne::{Label, ReportKind};
 use full_moon::{ast, visitors::Visitor};
 
-pub(crate) struct LowercaseGlobal {
+pub struct LowercaseGlobal {
     ctx: Arc<Context>,
 }
 impl_lint_pass!("lowercase-global", LowercaseGlobal, LintKind::Diagnostics);

@@ -1,27 +1,32 @@
-pub(crate) mod count_down_loop;
-pub(crate) mod global_in_nil_env;
-pub(crate) mod lowercase_global;
-pub(crate) mod undefined_global;
-pub(crate) mod unicode_name;
+mod count_down_loop;
+mod global_in_nil_env;
+mod lowercase_global;
+mod undefined_global;
+mod unicode_name;
+
+pub use count_down_loop::CountDownLoop;
+pub use global_in_nil_env::GlobalInNilEnv;
+pub use lowercase_global::LowercaseGlobal;
+pub use undefined_global::UndefinedGlobal;
+pub use unicode_name::UnicodeName;
 
 use crate::context::Context;
-
 use full_moon::ast;
 
-pub(crate) struct PassManager {
+pub struct PassManager {
     passes: Vec<Box<dyn Pass>>,
 }
 
 impl PassManager {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self { passes: Vec::new() }
     }
 
-    pub(crate) fn add_pass(&mut self, pass: Box<dyn Pass>) {
+    pub fn add_pass(&mut self, pass: Box<dyn Pass>) {
         self.passes.push(pass);
     }
 
-    pub(crate) fn run(&mut self, ast: &ast::Ast) {
+    pub fn run(&mut self, ast: &ast::Ast) {
         for pass in self.passes.iter_mut() {
             pass.run(ast);
         }
@@ -29,7 +34,7 @@ impl PassManager {
 }
 
 // Lint pass which traverses the AST
-pub(crate) trait Pass {
+pub trait Pass {
     fn ctx(&self) -> &Context;
     fn name(&self) -> &'static str;
     fn kind(&self) -> LintKind;
@@ -61,7 +66,7 @@ macro_rules! impl_lint_pass {
     };
 }
 
-pub(crate) enum LintKind {
+pub enum LintKind {
     Diagnostics,
     SyntaxError,
 }

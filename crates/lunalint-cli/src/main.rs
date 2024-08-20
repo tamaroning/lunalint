@@ -1,15 +1,11 @@
-pub(crate) mod context;
-pub(crate) mod diagnostics;
-pub(crate) mod location;
-mod pass;
-pub(crate) mod resolver;
-pub(crate) mod utils;
-
 use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 
-use ariadne::{Color, Fmt};
 use clap::Parser;
-use context::Context;
+use lunalint_core::{
+    ariadne::{Color, Fmt},
+    Context,
+    env_logger, full_moon, log, pass,
+};
 
 #[derive(Parser)]
 pub struct Args {
@@ -54,21 +50,11 @@ fn main() {
 
     let ctx = Arc::new(ctx);
     let mut pass_manager = pass::PassManager::new();
-    pass_manager.add_pass(Box::new(pass::count_down_loop::CountDownLoop::new(
-        Arc::clone(&ctx),
-    )));
-    pass_manager.add_pass(Box::new(pass::global_in_nil_env::GlobalInNilEnv::new(
-        Arc::clone(&ctx),
-    )));
-    pass_manager.add_pass(Box::new(pass::unicode_name::UnicodeName::new(Arc::clone(
-        &ctx,
-    ))));
-    pass_manager.add_pass(Box::new(pass::undefined_global::UndefinedGlobal::new(
-        Arc::clone(&ctx),
-    )));
-    pass_manager.add_pass(Box::new(pass::lowercase_global::LowercaseGlobal::new(
-        Arc::clone(&ctx),
-    )));
+    pass_manager.add_pass(Box::new(pass::CountDownLoop::new(Arc::clone(&ctx))));
+    pass_manager.add_pass(Box::new(pass::GlobalInNilEnv::new(Arc::clone(&ctx))));
+    pass_manager.add_pass(Box::new(pass::UnicodeName::new(Arc::clone(&ctx))));
+    pass_manager.add_pass(Box::new(pass::UndefinedGlobal::new(Arc::clone(&ctx))));
+    pass_manager.add_pass(Box::new(pass::LowercaseGlobal::new(Arc::clone(&ctx))));
     pass_manager.run(&ast);
 
     if ctx.saw_error() {

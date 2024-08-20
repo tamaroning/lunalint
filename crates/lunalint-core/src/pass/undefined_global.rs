@@ -11,7 +11,7 @@ use crate::{
 use ariadne::{Label, ReportKind};
 use full_moon::{ast, node::Node, visitors::Visitor};
 
-pub(crate) struct UndefinedGlobal {
+pub struct UndefinedGlobal {
     ctx: Arc<Context>,
 }
 impl_lint_pass!("undefined-global", UndefinedGlobal, LintKind::Diagnostics);

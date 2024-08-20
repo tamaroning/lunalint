@@ -10,7 +10,7 @@ use crate::{
 use ariadne::{Label, ReportKind};
 use full_moon::{node::Node, visitors::Visitor};
 
-pub(crate) struct CountDownLoop {
+pub struct CountDownLoop {
     ctx: Arc<Context>,
 }
 impl_lint_pass!("count-down-loop", CountDownLoop, LintKind::Diagnostics);
