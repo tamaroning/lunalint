@@ -1,3 +1,3 @@
 /target
-/lsp/node_modules
-/lsp/dist
+/extension/node_modules
+/extension/dist

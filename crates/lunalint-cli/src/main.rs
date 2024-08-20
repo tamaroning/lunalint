@@ -3,8 +3,7 @@ use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 use clap::Parser;
 use lunalint_core::{
     ariadne::{Color, Fmt},
-    Context,
-    env_logger, full_moon, log, pass,
+    env_logger, full_moon, log, pass, Context,
 };
 
 #[derive(Parser)]

@@ -21,11 +21,6 @@ impl Location {
     pub fn start(&self) -> usize {
         self.start
     }
-    /*
-    pub fn end(&self) -> usize {
-        self.end
-    }
-    */
 }
 
 impl From<Tokens<'_>> for Location {

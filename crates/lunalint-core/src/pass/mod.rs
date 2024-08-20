@@ -10,7 +10,10 @@ pub use lowercase_global::LowercaseGlobal;
 pub use undefined_global::UndefinedGlobal;
 pub use unicode_name::UnicodeName;
 
-use crate::context::Context;
+use crate::{
+    context::Context,
+    diagnostics::{LintKind, LintLevel},
+};
 use full_moon::ast;
 
 pub struct PassManager {
@@ -38,13 +41,13 @@ pub trait Pass {
     fn ctx(&self) -> &Context;
     fn name(&self) -> &'static str;
     fn kind(&self) -> LintKind;
+    fn level(&self) -> LintLevel;
     fn run(&mut self, ast: &full_moon::ast::Ast);
 }
 
 #[macro_export]
 macro_rules! impl_lint_pass {
-    ($name:literal, $pass:ty, $kind:expr) => {
-        use $crate::pass::LintKind;
+    ($name:literal, $pass:ty, $kind:expr, $level:expr) => {
         use $crate::pass::Pass;
         impl Pass for $pass {
             fn ctx(&self) -> &$crate::context::Context {
@@ -55,8 +58,12 @@ macro_rules! impl_lint_pass {
                 $name
             }
 
-            fn kind(&self) -> $crate::pass::LintKind {
+            fn kind(&self) -> $crate::diagnostics::LintKind {
                 $kind
+            }
+
+            fn level(&self) -> $crate::diagnostics::LintLevel {
+                $level
             }
 
             fn run(&mut self, ast: &full_moon::ast::Ast) {
@@ -64,18 +71,4 @@ macro_rules! impl_lint_pass {
             }
         }
     };
-}
-
-pub enum LintKind {
-    Diagnostics,
-    SyntaxError,
-}
-
-impl LintKind {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Diagnostics => "diagnostics",
-            Self::SyntaxError => "syntax-errors",
-        }
-    }
 }

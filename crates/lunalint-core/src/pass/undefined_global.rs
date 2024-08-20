@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
+use crate::diagnostics::{emit_report, LintKind, LintLabel, LintLevel, LintReport};
 use crate::resolver::NodeId;
 use crate::utils;
-use crate::{
-    context::Context,
-    diagnostics::{self, report},
-    impl_lint_pass,
-    location::Location,
-};
-use ariadne::{Label, ReportKind};
+use crate::{context::Context, impl_lint_pass, location::Location};
 use full_moon::{ast, node::Node, visitors::Visitor};
 
 pub struct UndefinedGlobal {
     ctx: Arc<Context>,
 }
-impl_lint_pass!("undefined-global", UndefinedGlobal, LintKind::Diagnostics);
+impl_lint_pass!(
+    "undefined-global",
+    UndefinedGlobal,
+    LintKind::Diagnostics,
+    LintLevel::Error
+);
 
 impl UndefinedGlobal {
     pub fn new(ctx: Arc<Context>) -> Self {
@@ -29,25 +29,21 @@ fn check_name(pass: &UndefinedGlobal, name: &str, use_: NodeId, loc: Location) {
     if utils::builtin_names().contains(&name) {
         return;
     }
-    let mut report = report(
-        pass,
-        ReportKind::Error,
-        loc,
-        format!("Undefined global `{name}`"),
-    );
+    let mut report = LintReport::new(pass, loc, format!("Undefined global `{name}`"));
+
     if let Some(suggestion) = get_wrong_name_suggestion(pass.ctx(), name) {
-        report = report.with_label(
-            Label::new((pass.ctx().file_name(), loc.into()))
-                .with_message(format!("Did you mean `{}`?", suggestion)),
-        );
+        report = report.with_label(LintLabel::new(
+            loc,
+            format!("Did you mean `{}`?", suggestion),
+        ));
     } else {
-        report = report.with_label(
-            Label::new((pass.ctx().file_name(), loc.into()))
-                .with_message("Similar name not found in this scope".to_string()),
-        );
+        report = report.with_label(LintLabel::new(
+            loc,
+            "Similar name not found in this scope".to_string(),
+        ));
     }
 
-    diagnostics::emit(pass, report);
+    emit_report(pass, report);
 }
 
 impl Visitor for UndefinedGlobal {

@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
+use crate::diagnostics::{emit_report, LintKind, LintLabel, LintLevel, LintReport};
 use crate::utils;
-use crate::{
-    context::Context,
-    diagnostics::{self, report},
-    impl_lint_pass,
-    location::Location,
-};
-use ariadne::{Label, ReportKind};
+use crate::{context::Context, impl_lint_pass, location::Location};
 use full_moon::{node::Node, visitors::Visitor};
 
 pub struct CountDownLoop {
     ctx: Arc<Context>,
 }
-impl_lint_pass!("count-down-loop", CountDownLoop, LintKind::Diagnostics);
+impl_lint_pass!(
+    "count-down-loop",
+    CountDownLoop,
+    LintKind::Diagnostics,
+    LintLevel::Error
+);
 
 impl CountDownLoop {
     pub fn new(ctx: Arc<Context>) -> Self {
@@ -35,18 +35,17 @@ impl Visitor for CountDownLoop {
 
         if start > end {
             let loc = Location::from(node.start().tokens()) + Location::from(node.end().tokens());
-            diagnostics::emit(
+            emit_report(
                 self,
-                report(
+                LintReport::new(
                     self,
-                    ReportKind::Error,
                     loc,
                     "Count down loop which never reaches end".to_string(),
                 )
-                .with_label(
-                    Label::new((self.ctx().file_name(), loc.into()))
-                        .with_message(format!("Did you mean `{}, {}, -1`?", start, end)),
-                ),
+                .with_label(LintLabel::new(
+                    loc,
+                    format!("Did you mean `{}, {}, -1`?", start, end),
+                )),
             );
         }
     }

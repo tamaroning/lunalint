@@ -1,15 +1,15 @@
 use std::{
     path::PathBuf,
-    sync::{atomic::AtomicBool, Arc},
+    sync::{Arc, Mutex},
 };
 
-use crate::resolver::Resolver;
+use crate::{diagnostics::LintReport, resolver::Resolver};
 
 pub struct Context {
     input_file: Arc<PathBuf>,
     src: Arc<String>,
     resolver: Resolver,
-    saw_error: AtomicBool,
+    reports: Mutex<Vec<LintReport>>,
 }
 
 impl Context {
@@ -18,7 +18,7 @@ impl Context {
             input_file: Arc::new(input_file),
             src: Arc::new(src),
             resolver: Resolver::new(),
-            saw_error: AtomicBool::new(false),
+            reports: Mutex::new(Vec::new()),
         }
     }
 
@@ -39,11 +39,10 @@ impl Context {
     }
 
     pub fn saw_error(&self) -> bool {
-        self.saw_error.load(std::sync::atomic::Ordering::Relaxed)
+        self.reports.lock().unwrap().is_empty()
     }
 
-    pub fn set_saw_error(&self) {
-        self.saw_error
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+    pub fn push_report(&self, report: LintReport) {
+        self.reports.lock().unwrap().push(report);
     }
 }

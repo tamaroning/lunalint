@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use crate::{
     context::Context,
-    diagnostics::{self, report},
+    diagnostics::{emit_report, LintKind, LintLabel, LintLevel, LintReport},
     impl_lint_pass,
     location::Location,
 };
-use ariadne::{Label, ReportKind};
 use full_moon::{
     ast,
     tokenizer::{TokenReference, TokenType},
@@ -16,7 +15,12 @@ use full_moon::{
 pub struct UnicodeName {
     ctx: Arc<Context>,
 }
-impl_lint_pass!("unicode-name", UnicodeName, LintKind::SyntaxError);
+impl_lint_pass!(
+    "unicode-name",
+    UnicodeName,
+    LintKind::SyntaxError,
+    LintLevel::Error
+);
 
 impl UnicodeName {
     pub fn new(ctx: Arc<Context>) -> Self {
@@ -31,17 +35,10 @@ fn check_name(pass: &UnicodeName, ident_tok: &TokenReference) {
     let name = identifier.as_str();
     let loc = Location::from(ident_tok);
     if !name.chars().all(|c| c.is_ascii()) {
-        diagnostics::emit(
+        emit_report(
             pass,
-            report(
-                pass,
-                ReportKind::Error,
-                loc,
-                format!("Unicode name `{name}`"),
-            )
-            .with_label(
-                Label::new((pass.ctx().file_name(), loc.into()))
-                    .with_message("Only ASCII characters are allowed".to_string()),
+            LintReport::new(pass, loc, format!("Unicode name `{name}`")).with_label(
+                LintLabel::new(loc, "Only ASCII characters are allowed".to_string()),
             ),
         );
     }

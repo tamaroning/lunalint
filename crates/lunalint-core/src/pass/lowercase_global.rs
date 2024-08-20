@@ -1,18 +1,19 @@
 use std::sync::Arc;
 
+use crate::diagnostics::{emit_report, LintKind, LintLabel, LintLevel, LintReport};
 use crate::resolver::{NodeId, Visibility};
-use crate::{
-    context::Context,
-    diagnostics::{self, report},
-    impl_lint_pass,
-};
-use ariadne::{Label, ReportKind};
+use crate::{context::Context, impl_lint_pass};
 use full_moon::{ast, visitors::Visitor};
 
 pub struct LowercaseGlobal {
     ctx: Arc<Context>,
 }
-impl_lint_pass!("lowercase-global", LowercaseGlobal, LintKind::Diagnostics);
+impl_lint_pass!(
+    "lowercase-global",
+    LowercaseGlobal,
+    LintKind::Diagnostics,
+    LintLevel::Error
+);
 
 impl LowercaseGlobal {
     pub fn new(ctx: Arc<Context>) -> Self {
@@ -29,18 +30,17 @@ fn check_name(pass: &LowercaseGlobal, def_id: NodeId) {
     if def.visibility() == Visibility::Global && first_char.is_ascii_lowercase() {
         let loc = def.loc();
         let name = def.name();
-        diagnostics::emit(
+        emit_report(
             pass,
-            report(
+            LintReport::new(
                 pass,
-                ReportKind::Error,
                 loc,
                 format!("Global variable `{name}` starts with a lowercase letter"),
             )
-            .with_label(
-                Label::new((pass.ctx().file_name(), loc.into()))
-                    .with_message("Did you miss `local` or misspell it?".to_string()),
-            ),
+            .with_label(LintLabel::new(
+                loc,
+                "Global variables should start with an uppercase letter".to_string(),
+            )),
         );
     }
 }
