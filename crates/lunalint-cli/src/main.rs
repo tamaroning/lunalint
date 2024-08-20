@@ -48,12 +48,7 @@ fn main() {
     ctx.resolver_mut().go(&ast);
 
     let ctx = Arc::new(ctx);
-    let mut pass_manager = pass::PassManager::new();
-    pass_manager.add_pass(Box::new(pass::CountDownLoop::new(Arc::clone(&ctx))));
-    pass_manager.add_pass(Box::new(pass::GlobalInNilEnv::new(Arc::clone(&ctx))));
-    pass_manager.add_pass(Box::new(pass::UnicodeName::new(Arc::clone(&ctx))));
-    pass_manager.add_pass(Box::new(pass::UndefinedGlobal::new(Arc::clone(&ctx))));
-    pass_manager.add_pass(Box::new(pass::LowercaseGlobal::new(Arc::clone(&ctx))));
+    let mut pass_manager = pass::PassManager::with_all_passes(Arc::clone(&ctx));
     pass_manager.run(&ast);
 
     for report in ctx.reports().iter() {

@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "lunalint.helloWorld",
-        "title": "Hello World"
+        "command": "lunalint.activate",
+        "title": "lunalint: Activate lunalint server"
       }
     ]
   },

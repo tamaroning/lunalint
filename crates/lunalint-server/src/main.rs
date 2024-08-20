@@ -8,7 +8,7 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 #[derive(Debug)]
 struct Backend {
-    client: Arc<Client>,
+    client: Client,
 }
 
 #[tower_lsp::async_trait]
@@ -16,9 +16,18 @@ impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
-                hover_provider: Some(HoverProviderCapability::Simple(true)),
-                completion_provider: Some(CompletionOptions::default()),
-                ..Default::default()
+                text_document_sync: Some(TextDocumentSyncCapability::Options(
+                    TextDocumentSyncOptions {
+                        open_close: Some(true),
+                        change: Some(TextDocumentSyncKind::NONE),
+                        save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
+                            // Set true to lint on save
+                            include_text: Some(true),
+                        })),
+                        ..TextDocumentSyncOptions::default()
+                    },
+                )),
+                ..ServerCapabilities::default()
             },
             ..Default::default()
         })
@@ -26,17 +35,20 @@ impl LanguageServer for Backend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "server initialized!")
+            .log_message(MessageType::INFO, "lunalintd initialized")
             .await;
     }
 
     async fn shutdown(&self) -> Result<()> {
+        self.client
+            .log_message(MessageType::INFO, "lunalintd shutdown")
+            .await;
         Ok(())
     }
 
-    async fn did_change(&self, params: DidChangeTextDocumentParams) {
+    async fn did_change(&self, _: DidChangeTextDocumentParams) {
         self.client
-            .log_message(MessageType::INFO, format!("file changed"))
+            .log_message(MessageType::INFO, format!("file changed, ignored"))
             .await;
     }
 
@@ -45,6 +57,7 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::INFO, format!("file opened: {}", uri))
             .await;
+        self.lint(uri, params.text_document.text).await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
@@ -55,20 +68,6 @@ impl LanguageServer for Backend {
         if let Some(src) = params.text {
             self.lint(uri, src).await;
         }
-    }
-
-    async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
-        Ok(Some(CompletionResponse::Array(vec![
-            CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
-            CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
-        ])))
-    }
-
-    async fn hover(&self, _: HoverParams) -> Result<Option<Hover>> {
-        Ok(Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String("You're hovering!".to_string())),
-            range: None,
-        }))
     }
 }
 
@@ -92,12 +91,7 @@ impl Backend {
             ctx.resolver_mut().go(&ast);
 
             let ctx = Arc::new(ctx);
-            let mut pass_manager = pass::PassManager::new();
-            pass_manager.add_pass(Box::new(pass::CountDownLoop::new(Arc::clone(&ctx))));
-            pass_manager.add_pass(Box::new(pass::GlobalInNilEnv::new(Arc::clone(&ctx))));
-            pass_manager.add_pass(Box::new(pass::UnicodeName::new(Arc::clone(&ctx))));
-            pass_manager.add_pass(Box::new(pass::UndefinedGlobal::new(Arc::clone(&ctx))));
-            pass_manager.add_pass(Box::new(pass::LowercaseGlobal::new(Arc::clone(&ctx))));
+            let mut pass_manager = pass::PassManager::with_all_passes(Arc::clone(&ctx));
             pass_manager.run(&ast);
 
             let reports = ctx
@@ -108,20 +102,11 @@ impl Backend {
             reports
         };
 
-        let mut handles = vec![];
+        let mut diags = vec![];
         for report in reports {
-            // spawn below
-            //show_report(&self.client, report, uri.clone()).await;
-            let client = Arc::clone(&self.client);
-            let report = Arc::clone(&report);
-            let uri = uri.clone();
-            handles.push(tokio::spawn(async move {
-                show_report(&client, &report, uri.clone()).await;
-            }));
+            diags.push(report_to_diag(&report));
         }
-        for handle in handles {
-            handle.await.unwrap();
-        }
+        self.client.publish_diagnostics(uri, diags, None).await;
     }
 }
 
@@ -134,33 +119,28 @@ fn lintlevel_to_severity(level: &LintLevel) -> DiagnosticSeverity {
 
 fn lintpos_to_lsppos(pos: &lunalint_core::location::Position) -> Position {
     Position {
-        line: pos.line() as u32,
-        character: pos.character() as u32,
+        line: pos.line() as u32 - 1,
+        character: pos.character() as u32 - 1,
     }
 }
 
-async fn show_report(client: &Client, report: &LintReport, uri: Url) {
-    let start = lintpos_to_lsppos(&report.loc().start());
-    let end = lintpos_to_lsppos(&report.loc().end());
+fn report_to_diag(report: &LintReport) -> Diagnostic {
+    let loc = report.loc();
+    let start = lintpos_to_lsppos(&loc.start());
+    let end = lintpos_to_lsppos(&loc.end());
     let severity = lintlevel_to_severity(&report.level());
 
-    client
-        .publish_diagnostics(
-            uri,
-            vec![Diagnostic {
-                range: Range { start, end },
-                severity: Some(severity),
-                code: None,
-                code_description: None,
-                source: Some("lunalint".to_owned()),
-                message: report.msg().to_owned(),
-                related_information: None,
-                tags: None,
-                data: None,
-            }],
-            None,
-        )
-        .await;
+    Diagnostic {
+        range: Range { start, end },
+        severity: Some(severity),
+        code: None,
+        code_description: None,
+        source: Some("lunalint".to_owned()),
+        message: report.msg().to_owned(),
+        related_information: None,
+        tags: None,
+        data: None,
+    }
 }
 
 #[tokio::main]
@@ -168,8 +148,6 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (service, socket) = LspService::new(|client| Backend {
-        client: Arc::new(client),
-    });
+    let (service, socket) = LspService::new(|client| Backend { client });
     Server::new(stdin, stdout, socket).serve(service).await;
 }

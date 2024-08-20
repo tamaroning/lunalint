@@ -1,20 +1,17 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { workspace } from 'vscode';
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node';
 
 let client: LanguageClient | null = null;
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('lunalint is now active!');
+	console.log('lunalint is now active');
 
 	const serverExecutable = context.asAbsolutePath(path.join('..', 'target', 'debug', 'lunalintd.exe'));
-	console.log('serverExecutable:', serverExecutable);
+	console.log('path:', serverExecutable);
 	const srcfilePath = vscode.window.activeTextEditor?.document.fileName;
 
-	const disposable = vscode.commands.registerCommand('lunalint.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World from lunalint!');
-	});
+	const disposable = vscode.commands.registerCommand('lunalint.activate', () => { });
 
 	context.subscriptions.push(disposable);
 
@@ -26,11 +23,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{
-			scheme: 'file', language: 'lua',
-			pattern: '**/*.lua'
+			scheme: 'file', pattern: '**/*.lua'
 		}],
 		synchronize: {
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+			fileEvents: vscode.workspace.createFileSystemWatcher('**/*.lua')
 		}
 	};
 
@@ -46,12 +42,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 export function deactivate(): Thenable<void> | undefined {
-	console.log('lunalint is deactivating');
-	/*
 	if (!client) {
+		console.error('Error: lunalint client is not defined');
 		return undefined;
 	}
 	return client.stop();
-	*/
-	return undefined;
 }

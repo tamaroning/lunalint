@@ -15,16 +15,30 @@ use crate::{
     diagnostics::{LintKind, LintLevel},
 };
 use full_moon::ast;
+use std::sync::Arc;
 
 pub struct PassManager {
     passes: Vec<Box<dyn Pass>>,
 }
 
 impl PassManager {
+    /// Create a new pass manager with no passes. Use [PassManager::with_all_passes] to create a pass manager with all passes.
     pub fn new() -> Self {
         Self { passes: Vec::new() }
     }
 
+    /// Create a new pass manager with all passes.
+    pub fn with_all_passes(ctx: Arc<Context>) -> Self {
+        let mut pass_manager = Self::new();
+        pass_manager.add_pass(Box::new(CountDownLoop::new(Arc::clone(&ctx))));
+        pass_manager.add_pass(Box::new(GlobalInNilEnv::new(Arc::clone(&ctx))));
+        pass_manager.add_pass(Box::new(UnicodeName::new(Arc::clone(&ctx))));
+        pass_manager.add_pass(Box::new(UndefinedGlobal::new(Arc::clone(&ctx))));
+        pass_manager.add_pass(Box::new(LowercaseGlobal::new(Arc::clone(&ctx))));
+        pass_manager
+    }
+
+    /// Register a pass with the pass manager.
     pub fn add_pass(&mut self, pass: Box<dyn Pass>) {
         self.passes.push(pass);
     }
