@@ -1,24 +1,27 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::{path::PathBuf, sync::Arc};
 
-use crate::{diagnostics::LintReport, resolver::Resolver};
+use parking_lot::{Mutex, MutexGuard};
+
+use crate::{diagnostics::LintReport, location::SourceInfo, resolver::Resolver};
 
 pub struct Context {
     input_file: Arc<PathBuf>,
-    src: Arc<String>,
     resolver: Resolver,
     reports: Mutex<Vec<LintReport>>,
+    src: Arc<SourceInfo>,
 }
 
 impl Context {
     pub fn new(input_file: PathBuf, src: String) -> Self {
+        let src = Arc::new(SourceInfo::new(
+            input_file.to_str().unwrap().to_string(),
+            src,
+        ));
         Self {
             input_file: Arc::new(input_file),
-            src: Arc::new(src),
-            resolver: Resolver::new(),
+            resolver: Resolver::new(Arc::clone(&src)),
             reports: Mutex::new(Vec::new()),
+            src,
         }
     }
 
@@ -26,7 +29,7 @@ impl Context {
         self.input_file.file_name().unwrap().to_str().unwrap()
     }
 
-    pub fn src(&self) -> &str {
+    pub fn src(&self) -> &Arc<SourceInfo> {
         &self.src
     }
 
@@ -39,10 +42,14 @@ impl Context {
     }
 
     pub fn saw_error(&self) -> bool {
-        self.reports.lock().unwrap().is_empty()
+        self.reports.lock().is_empty()
     }
 
     pub fn push_report(&self, report: LintReport) {
-        self.reports.lock().unwrap().push(report);
+        self.reports.lock().push(report);
+    }
+
+    pub fn reports(&self) -> MutexGuard<Vec<LintReport>> {
+        self.reports.lock()
     }
 }

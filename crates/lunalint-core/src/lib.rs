@@ -6,6 +6,7 @@ mod resolver;
 mod utils;
 
 pub use context::Context;
+pub use diagnostics::print_report;
 
 // reexports
 pub use ariadne;

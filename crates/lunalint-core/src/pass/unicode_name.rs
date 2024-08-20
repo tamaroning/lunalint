@@ -33,11 +33,11 @@ fn check_name(pass: &UnicodeName, ident_tok: &TokenReference) {
         unreachable!();
     };
     let name = identifier.as_str();
-    let loc = Location::from(ident_tok);
+    let loc = Location::from((pass.ctx().src(), ident_tok));
     if !name.chars().all(|c| c.is_ascii()) {
         emit_report(
             pass,
-            LintReport::new(pass, loc, format!("Unicode name `{name}`")).with_label(
+            LintReport::new(pass, loc.clone(), format!("Unicode name `{name}`")).with_label(
                 LintLabel::new(loc, "Only ASCII characters are allowed".to_string()),
             ),
         );

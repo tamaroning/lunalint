@@ -34,7 +34,7 @@ fn check_name(pass: &LowercaseGlobal, def_id: NodeId) {
             pass,
             LintReport::new(
                 pass,
-                loc,
+                loc.clone(),
                 format!("Global variable `{name}` starts with a lowercase letter"),
             )
             .with_label(LintLabel::new(

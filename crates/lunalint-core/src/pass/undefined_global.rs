@@ -29,7 +29,7 @@ fn check_name(pass: &UndefinedGlobal, name: &str, use_: NodeId, loc: Location) {
     if utils::builtin_names().contains(&name) {
         return;
     }
-    let mut report = LintReport::new(pass, loc, format!("Undefined global `{name}`"));
+    let mut report = LintReport::new(pass, loc.clone(), format!("Undefined global `{name}`"));
 
     if let Some(suggestion) = get_wrong_name_suggestion(pass.ctx(), name) {
         report = report.with_label(LintLabel::new(
@@ -58,7 +58,7 @@ impl Visitor for UndefinedGlobal {
         }
 
         let node_id = NodeId::from(node);
-        let loc = Location::from(node.tokens());
+        let loc = Location::from((self.ctx().src(), node.tokens()));
         check_name(self, name, node_id, loc);
     }
 
@@ -73,7 +73,7 @@ impl Visitor for UndefinedGlobal {
         }
 
         let node_id = NodeId::from(prefix);
-        let loc = Location::from(prefix.tokens());
+        let loc = Location::from((self.ctx().src(), prefix.tokens()));
         check_name(self, name, node_id, loc);
     }
 }

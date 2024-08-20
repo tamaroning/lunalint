@@ -58,7 +58,7 @@ impl LintLabel {
 
     pub fn loc(&self) -> Location {
         match self {
-            Self::Label { loc, .. } => *loc,
+            Self::Label { loc, .. } => loc.clone(),
         }
     }
 
@@ -69,11 +69,13 @@ impl LintLabel {
     }
 }
 
+/// Emit a lint report. This function is used by lint passes.
 pub fn emit_report(pass: &dyn Pass, report: LintReport) {
     pass.ctx().push_report(report)
 }
 
-pub fn print_report(pass: &dyn Pass, report: &LintReport) {
+/// Print a lint report to stderr. Do not use this function in lint passes.
+pub fn print_report(report: &LintReport) {
     let LintReport {
         name,
         kind,
@@ -87,17 +89,15 @@ pub fn print_report(pass: &dyn Pass, report: &LintReport) {
         LintLevel::Error => ReportKind::Error,
         LintLevel::Warning => ReportKind::Warning,
     };
-    let mut builder =
-        Report::build(level, pass.ctx().file_name(), loc.start()).with_message(format!(
-            "{} {}",
-            msg,
-            format!("({})", pass.name()).fg(Color::BrightBlack)
-        ));
+    let mut builder = Report::build(level, loc.src().path(), loc.start()).with_message(format!(
+        "{} {}",
+        msg,
+        format!("({})", name).fg(Color::BrightBlack)
+    ));
 
     for label in labels {
-        builder = builder.with_label(
-            Label::new((pass.ctx().file_name(), label.loc().into())).with_message(label.msg()),
-        );
+        builder = builder
+            .with_label(Label::new((loc.src().path(), loc.range())).with_message(label.msg()));
     }
 
     builder
@@ -107,6 +107,6 @@ pub fn print_report(pass: &dyn Pass, report: &LintReport) {
             name
         ))
         .finish()
-        .print((pass.ctx().file_name(), Source::from(pass.ctx().src())))
+        .eprint((loc.src().path(), Source::from(loc.src().content())))
         .unwrap();
 }

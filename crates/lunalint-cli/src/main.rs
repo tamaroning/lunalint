@@ -3,7 +3,7 @@ use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 use clap::Parser;
 use lunalint_core::{
     ariadne::{Color, Fmt},
-    env_logger, full_moon, log, pass, Context,
+    env_logger, full_moon, log, pass, print_report, Context,
 };
 
 #[derive(Parser)]
@@ -55,6 +55,10 @@ fn main() {
     pass_manager.add_pass(Box::new(pass::UndefinedGlobal::new(Arc::clone(&ctx))));
     pass_manager.add_pass(Box::new(pass::LowercaseGlobal::new(Arc::clone(&ctx))));
     pass_manager.run(&ast);
+
+    for report in ctx.reports().iter() {
+        print_report(report);
+    }
 
     if ctx.saw_error() {
         exit_with_error();

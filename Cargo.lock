@@ -580,6 +580,7 @@ dependencies = [
  "env_logger",
  "full_moon",
  "log",
+ "parking_lot",
 ]
 
 [[package]]

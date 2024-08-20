@@ -34,12 +34,13 @@ impl Visitor for CountDownLoop {
         }
 
         if start > end {
-            let loc = Location::from(node.start().tokens()) + Location::from(node.end().tokens());
+            let loc = Location::from((self.ctx().src(), node.start().tokens()))
+                + Location::from((self.ctx().src(), node.end().tokens()));
             emit_report(
                 self,
                 LintReport::new(
                     self,
-                    loc,
+                    loc.clone(),
                     "Count down loop which never reaches end".to_string(),
                 )
                 .with_label(LintLabel::new(

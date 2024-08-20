@@ -32,11 +32,15 @@ impl Visitor for GlobalInNilEnv {
                 true
             };
             if utils::variable_name(var) == Some("_ENV") && is_nil {
-                let loc = Location::from(var.tokens());
+                let loc = Location::from((self.ctx().src(), var.tokens()));
                 emit_report(
                     self,
-                    LintReport::new(self, loc, "Invalid global (`_ENV` is `nil`)".to_string())
-                        .with_label(LintLabel::new(loc, "Assignment occurs here".to_string())),
+                    LintReport::new(
+                        self,
+                        loc.clone(),
+                        "Invalid global (`_ENV` is `nil`)".to_string(),
+                    )
+                    .with_label(LintLabel::new(loc, "Assignment occurs here".to_string())),
                 );
             }
         }

@@ -1,9 +1,10 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use full_moon::visitors::Visit;
 use full_moon::{ast, node::Node, visitors::Visitor};
 
-use crate::location::Location;
+use crate::location::{Location, SourceInfo};
 use crate::utils;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -54,7 +55,7 @@ impl Definition {
     }
 
     pub fn loc(&self) -> Location {
-        self.loc
+        self.loc.clone()
     }
 }
 
@@ -77,15 +78,17 @@ pub struct Resolver {
     // current lexical scope. After resolving, the first scope only remains
     scopes: Vec<HashMap<String, NodeId>>,
     definitions: HashMap<NodeId, Definition>,
+    src: Arc<SourceInfo>,
 }
 
 impl Resolver {
-    pub fn new() -> Self {
+    pub fn new(src: Arc<SourceInfo>) -> Self {
         Resolver {
             use_defs: HashMap::new(),
             def_uses: HashMap::new(),
             scopes: Vec::new(),
             definitions: HashMap::new(),
+            src,
         }
     }
 
@@ -161,7 +164,7 @@ impl<'a> Visitor for Resolver {
     fn visit_local_function(&mut self, node: &ast::LocalFunction) {
         let node_id = NodeId::from(node);
         let name = node.name().to_string();
-        let loc = Location::from(node.name());
+        let loc = Location::from((&self.src, node.name()));
         let def = Definition::new(Visibility::Local, name.clone(), loc);
         log::trace!("insert local function definition {}", name);
         self.insert_local_definiton(name, node_id, def);
@@ -172,7 +175,7 @@ impl<'a> Visitor for Resolver {
 
         if function_name.names().len() == 1 {
             let node_id = NodeId::from(function_name);
-            let loc = Location::from(function_name.names().first().tokens());
+            let loc = Location::from((&self.src, function_name.names().first().tokens()));
             let name = function_name.names().first().unwrap().to_string();
             log::trace!("insert global function definition {}", name);
             let def = Definition::new(Visibility::Function, name.clone(), loc);
@@ -188,7 +191,7 @@ impl<'a> Visitor for Resolver {
                 continue;
             };
             let node_id = NodeId::from(param);
-            let loc = Location::from(name);
+            let loc = Location::from((&self.src, name));
             let name = utils::ident_as_str(name).to_owned();
             let def = Definition::new(Visibility::Local, name.clone(), loc);
             log::trace!("insert function parameter {}", name);
@@ -203,7 +206,7 @@ impl<'a> Visitor for Resolver {
     fn visit_local_assignment(&mut self, node: &ast::LocalAssignment) {
         for name in node.names() {
             let node_id = NodeId::from(name);
-            let loc = Location::from(name);
+            let loc = Location::from((&self.src, name));
             let name = utils::ident_as_str(name).to_owned();
             let def = Definition::new(Visibility::Local, name.clone(), loc);
             log::trace!("insert local assignment definition {}", name);
@@ -217,7 +220,7 @@ impl<'a> Visitor for Resolver {
                 continue;
             };
             let node_id = NodeId::from(var);
-            let loc = Location::from(name);
+            let loc = Location::from((&self.src, name));
             let name = utils::ident_as_str(name).to_owned();
             if let Some(_) = self.lookup_name(&name) {
                 // Found a definition. This is a local assignment.

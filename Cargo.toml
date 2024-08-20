@@ -4,5 +4,5 @@ members = [
     "crates/lunalint-core",
     "crates/lunalint-server"
     ]
-
 default-members = ["crates/lunalint-cli"]
+resolver = "2"
