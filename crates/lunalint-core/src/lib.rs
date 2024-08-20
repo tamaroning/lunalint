@@ -1,6 +1,6 @@
 mod context;
-mod diagnostics;
-mod location;
+pub mod diagnostics;
+pub mod location;
 pub mod pass;
 mod resolver;
 mod utils;

@@ -587,6 +587,7 @@ dependencies = [
 name = "lunalint-server"
 version = "0.1.0"
 dependencies = [
+ "lunalint-core",
  "tokio",
  "tower-lsp",
 ]

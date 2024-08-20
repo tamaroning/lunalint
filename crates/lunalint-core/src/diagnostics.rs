@@ -1,6 +1,7 @@
 use crate::{location::Location, pass::Pass};
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 
+#[derive(Clone)]
 pub struct LintReport {
     name: String,
     kind: LintKind,
@@ -26,8 +27,29 @@ impl LintReport {
         self.labels.push(label);
         self
     }
+
+    pub fn kind(&self) -> LintKind {
+        self.kind
+    }
+
+    pub fn level(&self) -> LintLevel {
+        self.level
+    }
+
+    pub fn loc(&self) -> Location {
+        self.loc.clone()
+    }
+
+    pub fn msg(&self) -> &str {
+        &self.msg
+    }
+
+    pub fn labels(&self) -> &[LintLabel] {
+        &self.labels
+    }
 }
 
+#[derive(Clone, Copy)]
 pub enum LintKind {
     Diagnostics,
     SyntaxError,
@@ -42,11 +64,13 @@ impl LintKind {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum LintLevel {
     Error,
     Warning,
 }
 
+#[derive(Clone)]
 pub enum LintLabel {
     Label { msg: String, loc: Location },
 }
@@ -89,11 +113,9 @@ pub fn print_report(report: &LintReport) {
         LintLevel::Error => ReportKind::Error,
         LintLevel::Warning => ReportKind::Warning,
     };
-    let mut builder = Report::build(level, loc.src().path(), loc.start()).with_message(format!(
-        "{} {}",
-        msg,
-        format!("({})", name).fg(Color::BrightBlack)
-    ));
+    let mut builder = Report::build(level, loc.src().path(), loc.start().bytes()).with_message(
+        format!("{} {}", msg, format!("({})", name).fg(Color::BrightBlack)),
+    );
 
     for label in labels {
         builder = builder

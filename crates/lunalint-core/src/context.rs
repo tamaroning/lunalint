@@ -7,7 +7,7 @@ use crate::{diagnostics::LintReport, location::SourceInfo, resolver::Resolver};
 pub struct Context {
     input_file: Arc<PathBuf>,
     resolver: Resolver,
-    reports: Mutex<Vec<LintReport>>,
+    reports: Mutex<Vec<Arc<LintReport>>>,
     src: Arc<SourceInfo>,
 }
 
@@ -46,10 +46,10 @@ impl Context {
     }
 
     pub fn push_report(&self, report: LintReport) {
-        self.reports.lock().push(report);
+        self.reports.lock().push(Arc::new(report));
     }
 
-    pub fn reports(&self) -> MutexGuard<Vec<LintReport>> {
+    pub fn reports(&self) -> MutexGuard<Vec<Arc<LintReport>>> {
         self.reports.lock()
     }
 }
