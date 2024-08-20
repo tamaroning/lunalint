@@ -117,6 +117,16 @@ fn lintlevel_to_severity(level: &LintLevel) -> DiagnosticSeverity {
     }
 }
 
+fn lintloc_to_lsploc(loc: &lunalint_core::location::Location) -> Location {
+    Location {
+        uri: Url::from_file_path(loc.src().path()).unwrap(),
+        range: Range {
+            start: lintpos_to_lsppos(&loc.start()),
+            end: lintpos_to_lsppos(&loc.end()),
+        },
+    }
+}
+
 fn lintpos_to_lsppos(pos: &lunalint_core::location::Position) -> Position {
     Position {
         line: pos.line() as u32 - 1,
@@ -130,6 +140,19 @@ fn report_to_diag(report: &LintReport) -> Diagnostic {
     let end = lintpos_to_lsppos(&loc.end());
     let severity = lintlevel_to_severity(&report.level());
 
+    let mut related_information = None;
+    if !report.labels().is_empty() {
+        let mut infos = vec![];
+        for label in report.labels() {
+            let info = DiagnosticRelatedInformation {
+                location: lintloc_to_lsploc(&label.loc()),
+                message: label.msg().to_owned(),
+            };
+            infos.push(info);
+        }
+        related_information = Some(infos);
+    }
+
     Diagnostic {
         range: Range { start, end },
         severity: Some(severity),
@@ -137,7 +160,7 @@ fn report_to_diag(report: &LintReport) -> Diagnostic {
         code_description: None,
         source: Some("lunalint".to_owned()),
         message: report.msg().to_owned(),
-        related_information: None,
+        related_information,
         tags: None,
         data: None,
     }
