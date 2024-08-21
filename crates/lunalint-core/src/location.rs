@@ -33,8 +33,16 @@ pub struct Location {
 }
 
 impl Location {
-    fn new(src: Arc<SourceInfo>, start: Position, end: Position) -> Self {
+    pub(crate) fn new(src: Arc<SourceInfo>, start: Position, end: Position) -> Self {
         Self { src, start, end }
+    }
+
+    pub(crate) fn from_position(src: Arc<SourceInfo>, pos: Position) -> Self {
+        Self {
+            src,
+            start: pos,
+            end: pos,
+        }
     }
 
     pub fn dummy() -> Self {

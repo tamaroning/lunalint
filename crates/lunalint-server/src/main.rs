@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use lunalint_core::diagnostics::{LintLevel, LintReport};
+use lunalint_core::location::SourceInfo;
 use lunalint_core::{full_moon, pass, Context};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
@@ -86,8 +87,9 @@ impl Backend {
             .log_message(MessageType::ERROR, format!("parse finished"))
             .await;
 
+        let src = Arc::new(SourceInfo::new(uri.to_string(), src));
         let reports = {
-            let mut ctx = Context::new(uri.to_file_path().unwrap(), src);
+            let mut ctx = Context::new(src);
             ctx.resolver_mut().go(&ast);
 
             let ctx = Arc::new(ctx);

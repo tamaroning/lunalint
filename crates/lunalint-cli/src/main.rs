@@ -3,7 +3,9 @@ use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 use clap::Parser;
 use lunalint_core::{
     ariadne::{Color, Fmt},
-    env_logger, full_moon, log, pass, print_report, Context,
+    env_logger,
+    location::SourceInfo,
+    log, parse, pass, print_report, Context,
 };
 
 #[derive(Parser)]
@@ -28,23 +30,27 @@ fn main() {
         std::process::exit(1);
     };
 
-    let mut src = String::new();
-    let Ok(_) = file.read_to_string(&mut src).map_err(|e| {
+    let mut code = String::new();
+    let Ok(_) = file.read_to_string(&mut code).map_err(|e| {
         error(format!("failed to read file: {}", e));
     }) else {
         std::process::exit(1);
     };
 
-    let Ok(ast) = full_moon::parse(&src).map_err(|e| {
-        // pretty print parse errors
-        error(format!("failed to parse file: {}", e))
+    let src = Arc::new(SourceInfo::new(
+        args.input_file.to_str().unwrap().to_string(),
+        code,
+    ));
+
+    let Ok(ast) = parse(Arc::clone(&src)).map_err(|e| {
+        print_report(&e);
     }) else {
         std::process::exit(1);
     };
 
     log::debug!("successfully parsed file");
 
-    let mut ctx = Context::new(args.input_file, src);
+    let mut ctx = Context::new(src);
     ctx.resolver_mut().go(&ast);
 
     let ctx = Arc::new(ctx);

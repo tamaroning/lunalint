@@ -23,6 +23,17 @@ impl LintReport {
         }
     }
 
+    pub fn new_parse_error(loc: Location, msg: String) -> Self {
+        LintReport {
+            name: "parse-error".to_owned(),
+            kind: LintKind::ParseError,
+            level: LintLevel::Error,
+            loc,
+            msg,
+            labels: Vec::new(),
+        }
+    }
+
     pub fn with_label(mut self, label: LintLabel) -> Self {
         self.labels.push(label);
         self
@@ -53,6 +64,7 @@ impl LintReport {
 pub enum LintKind {
     Diagnostics,
     SyntaxError,
+    ParseError,
 }
 
 impl LintKind {
@@ -60,6 +72,7 @@ impl LintKind {
         match self {
             Self::Diagnostics => "diagnostics",
             Self::SyntaxError => "syntax-errors",
+            Self::ParseError => "parse-errors",
         }
     }
 }
@@ -122,12 +135,15 @@ pub fn print_report(report: &LintReport) {
             .with_label(Label::new((loc.src().path(), loc.range())).with_message(label.msg()));
     }
 
-    builder
-        .with_help(format!(
+    if matches!(report.kind(), LintKind::Diagnostics | LintKind::SyntaxError) {
+        builder = builder.with_help(format!(
             "for further information visit https://luals.github.io/wiki/{}/#{}",
             kind.as_str(),
             name
-        ))
+        ));
+    }
+
+    builder
         .finish()
         .eprint((loc.src().path(), Source::from(loc.src().content())))
         .unwrap();
