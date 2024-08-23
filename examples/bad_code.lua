@@ -5,4 +5,4 @@ end
 
 foo = { i = 1 }
 
-A  = po
+A  = poo
