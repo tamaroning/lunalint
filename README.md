@@ -45,3 +45,9 @@ $ cargo run --release -- examples/bad_code.lua
 lunalint: error: exited with 1 due to previous errors
 ```
 
+## License
+
+MIT.
+
+See [LICENSE](LICENSE).
+
