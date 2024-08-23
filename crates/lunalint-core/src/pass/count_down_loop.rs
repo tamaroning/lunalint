@@ -48,8 +48,8 @@ impl Visitor for CountDownLoop {
                     loc,
                     format!(
                         "Did you mean `{}, {}, -1`?",
-                        node.start().to_string(),
-                        node.end().to_string()
+                        node.start().to_string().trim(),
+                        node.end().to_string().trim()
                     ),
                 )),
             );
