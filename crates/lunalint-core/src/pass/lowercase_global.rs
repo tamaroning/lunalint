@@ -55,17 +55,4 @@ impl Visitor for LowercaseGlobal {
             check_name(self, def_id);
         }
     }
-
-    fn visit_prefix(&mut self, prefix: &ast::Prefix) {
-        let ast::Prefix::Name(_) = prefix else {
-            return;
-        };
-        let node_id = NodeId::from(prefix);
-        // Ignore unresolved names
-        let Some(def_id) = self.ctx().resolver().lookup_definiton(node_id) else {
-            return;
-        };
-
-        check_name(self, def_id);
-    }
 }

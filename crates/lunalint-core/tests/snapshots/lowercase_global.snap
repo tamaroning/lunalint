@@ -1,0 +1,21 @@
+---
+source: crates/lunalint-core/tests/lua_test.rs
+---
+Error: Global variable `bar` starts with a lowercase letter (lowercase-global)
+    ╭─[tests/lua/lowercase-global.lua:15:1]
+    │
+ 15 │ bar = { i = 1 }
+    │ ─┬─  
+    │  ╰─── Global variables should start with an uppercase letter
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#lowercase-global
+────╯
+Error: Global variable `kSomeConstant` starts with a lowercase letter (lowercase-global)
+    ╭─[tests/lua/lowercase-global.lua:22:1]
+    │
+ 22 │ kSomeConstant = 1
+    │ ──────┬──────  
+    │       ╰──────── Global variables should start with an uppercase letter
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#lowercase-global
+────╯

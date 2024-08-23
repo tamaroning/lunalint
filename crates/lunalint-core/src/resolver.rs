@@ -75,6 +75,12 @@ pub struct Resolver {
     use_defs: HashMap<NodeId, NodeId>,
     // Def-Use relations
     def_uses: HashMap<NodeId, Vec<NodeId>>,
+
+    // Assignment relations
+    // e.g. foo = 1; foo = 2
+    // relation: foo (second occurence) -> foo (first occurence)
+    reassignments: HashMap<NodeId, NodeId>,
+
     // current lexical scope. After resolving, the first scope only remains
     scopes: Vec<HashMap<String, NodeId>>,
     definitions: HashMap<NodeId, Definition>,
@@ -86,6 +92,7 @@ impl Resolver {
         Resolver {
             use_defs: HashMap::new(),
             def_uses: HashMap::new(),
+            reassignments: HashMap::new(),
             scopes: Vec::new(),
             definitions: HashMap::new(),
             src,
@@ -102,7 +109,15 @@ impl Resolver {
             // This is already a definition
             return Some(node_id);
         }
-        self.use_defs.get(&node_id).copied()
+        // Check use-def relation
+        if let Some(def_id) = self.use_defs.get(&node_id) {
+            return Some(*def_id);
+        }
+        // Check reassignment relation
+        if let Some(def_id) = self.reassignments.get(&node_id) {
+            return Some(*def_id);
+        }
+        None
     }
 
     pub fn get_definition(&self, def_id: NodeId) -> Option<&Definition> {
@@ -204,6 +219,7 @@ impl<'a> Visitor for Resolver {
     }
 
     fn visit_local_assignment(&mut self, node: &ast::LocalAssignment) {
+        // local assignments are always a definiton (including shadowing)
         for name in node.names() {
             let node_id = NodeId::from(name);
             let loc = Location::from((&self.src, name));
@@ -222,8 +238,10 @@ impl<'a> Visitor for Resolver {
             let node_id = NodeId::from(var);
             let loc = Location::from((&self.src, name));
             let name = utils::ident_as_str(name).to_owned();
-            if let Some(_) = self.lookup_name(&name) {
-                // Found a definition. This is a local assignment.
+            if let Some(def_id) = self.lookup_name(&name) {
+                // Found a definition. This is a reassignment.
+                log::trace!("found reassignment {}", name);
+                self.reassignments.insert(node_id, def_id);
             } else {
                 // Definiton not found. This is a global assignment.
                 let def = Definition::new(Visibility::Global, name.clone(), loc);
@@ -233,23 +251,25 @@ impl<'a> Visitor for Resolver {
         }
     }
 
-    fn visit_var(&mut self, node: &ast::Var) {
-        let ast::Var::Name(name) = node else {
-            return;
-        };
-        let name = utils::ident_as_str(name);
-        let node_id = NodeId::from(node);
-        if let Some(def_id) = self.lookup_name(name) {
-            log::debug!("Resolve use of `{name}`: {:?} -> {:?}", node_id, def_id);
-            // Register use-def and def-use relation
-            self.use_defs.insert(node_id, def_id);
-            self.def_uses
-                .entry(def_id)
-                .or_insert_with(Vec::new)
-                .push(node_id);
-        } else {
-            // Unresolved name. Error is emitted by undefined-global pass.
-            log::debug!("unresolved name: `{}`", name);
+    fn visit_expression(&mut self, node: &ast::Expression) {
+        if let ast::Expression::Var(var) = node {
+            let ast::Var::Name(name) = var else {
+                return;
+            };
+            let name = utils::ident_as_str(name);
+            let node_id = NodeId::from(var);
+            if let Some(def_id) = self.lookup_name(name) {
+                log::debug!("Resolve use of `{name}`: {:?} -> {:?}", node_id, def_id);
+                // Register use-def and def-use relation
+                self.use_defs.insert(node_id, def_id);
+                self.def_uses
+                    .entry(def_id)
+                    .or_insert_with(Vec::new)
+                    .push(node_id);
+            } else {
+                // Unresolved name. Error is emitted by undefined-global pass.
+                log::debug!("unresolved name: `{}`", name);
+            }
         }
     }
 
