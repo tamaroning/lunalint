@@ -106,13 +106,31 @@ impl LintLabel {
     }
 }
 
-/// Emit a lint report. This function is used by lint passes.
-pub fn emit_report(pass: &dyn Pass, report: LintReport) {
+/// Emit a lint report from lint passes, which is internally stored in the context.
+pub(crate) fn emit_report(pass: &dyn Pass, report: LintReport) {
     pass.ctx().push_report(report)
 }
 
-/// Print a lint report to stderr. Do not use this function in lint passes.
-pub fn print_report(report: &LintReport) {
+/// Print a lint report to stderr. Do not use this from lint passes.
+pub fn eprint_report(report: &LintReport) {
+    let loc = report.loc();
+    convert_report(report)
+        .eprint((loc.src().path(), Source::from(loc.src().content())))
+        .unwrap();
+}
+
+/// Write a lint report to the given writer.
+pub fn write_report<W: std::io::Write>(report: &LintReport, w: W) {
+    let loc = report.loc();
+    convert_report(report)
+        .write((loc.src().path(), Source::from(loc.src().content())), w)
+        .unwrap();
+}
+
+/// Convert a lint report to an ariadne's report.
+fn convert_report<'a>(report: &'a LintReport) -> Report<'a, (&'a str, std::ops::Range<usize>)>
+where
+{
     let LintReport {
         name,
         kind,
@@ -143,8 +161,5 @@ pub fn print_report(report: &LintReport) {
         ));
     }
 
-    builder
-        .finish()
-        .eprint((loc.src().path(), Source::from(loc.src().content())))
-        .unwrap();
+    builder.finish()
 }

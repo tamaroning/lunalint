@@ -3,9 +3,9 @@ use std::{fs::OpenOptions, io::Read, path::PathBuf, sync::Arc};
 use clap::Parser;
 use lunalint_core::{
     ariadne::{Color, Fmt},
-    env_logger,
+    env_logger, eprint_report,
     location::SourceInfo,
-    log, parse, pass, print_report, Context,
+    log, parse, pass, Context,
 };
 
 #[derive(Parser)]
@@ -43,7 +43,7 @@ fn main() {
     ));
 
     let Ok(ast) = parse(Arc::clone(&src)).map_err(|e| {
-        print_report(&e);
+        eprint_report(&e);
     }) else {
         std::process::exit(1);
     };
@@ -58,7 +58,7 @@ fn main() {
     pass_manager.run(&ast);
 
     for report in ctx.reports().iter() {
-        print_report(report);
+        eprint_report(report);
     }
 
     if ctx.saw_error() {
