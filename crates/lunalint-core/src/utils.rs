@@ -93,22 +93,121 @@ pub(super) fn is_nil(e: &ast::Expression) -> bool {
     }
 }
 
-pub(super) fn to_integer(e: &Expression) -> Option<i64> {
+pub(super) fn to_number(e: &Expression) -> Option<f64> {
     match e {
         Expression::Number(n) => match n.token_type() {
-            TokenType::Number { text } => {
-                if text.starts_with("0x") {
-                    i64::from_str_radix(&text[2..], 16).ok()
-                } else if text.starts_with("0b") {
-                    i64::from_str_radix(&text[2..], 2).ok()
-                } else if text.starts_with("0o") {
-                    i64::from_str_radix(&text[2..], 8).ok()
-                } else {
-                    text.parse::<i64>().ok()
-                }
-            }
+            TokenType::Number { text } => parse_lua_number(text.as_str()),
             _ => None,
         },
         _ => None,
     }
+}
+
+fn parse_lua_number(e: &str) -> Option<f64> {
+    // Convert to lowercase for simplicity
+    let e = e.to_ascii_lowercase();
+
+    // Check and strip sign
+    let (e, neg) = if e.starts_with('-') {
+        (&e[1..], true)
+    } else if e.starts_with('+') {
+        (&e[1..], false)
+    } else {
+        (&e[..], false)
+    };
+
+    // Check and strip hex, binary, octal prefix
+    let (e, radix): (_, u32) = if e.starts_with("0x") {
+        (&e[2..], 16)
+    } else if e.starts_with("0b") {
+        (&e[2..], 2)
+    } else if e.starts_with("0o") {
+        (&e[2..], 8)
+    } else {
+        (e, 10)
+    };
+
+    // Retrieve exponent part if any. e.g. p+0, e-9
+    let (e, mantissa) = if let Some(pos) = e.find("p+") {
+        let n = &e[pos + 2..];
+        let exp = n
+            .parse::<u32>()
+            .expect("expected u32 after p+ in numerical literal");
+        let v = 2_u32.pow(exp) as f64;
+        (&e[..pos], Some(v))
+    } else if let Some(pos) = e.find("p-") {
+        let n = &e[pos + 2..];
+        let exp = n
+            .parse::<u32>()
+            .expect("expected u32 after p- in numerical literal");
+        let v = 1. / (2_u32.pow(exp) as f64);
+        (&e[..pos], Some(v))
+    } else if let Some(pos) = e.find("e+") {
+        let n = &e[pos + 2..];
+        let exp = n
+            .parse::<u32>()
+            .expect("expected u32 after e+ in numerical literal");
+        let v = 10_u32.pow(exp) as f64;
+        (&e[..pos], Some(v))
+    } else if let Some(pos) = e.find("e-") {
+        let n = &e[pos + 2..];
+        let exp = n
+            .parse::<u32>()
+            .expect("expected u32 after e- in numerical literal");
+        let v = 1. / (10_u32.pow(exp) as f64);
+        (&e[..pos], Some(v))
+    } else {
+        (&e[..], None)
+    };
+
+    let parts = e.split('.').collect::<Vec<&str>>();
+    let (int, frac) = if parts.len() == 1 {
+        (parts.first().unwrap(), None)
+    } else {
+        (parts.first().unwrap(), parts.last())
+    };
+
+    // parse integer part
+    let mut v = i64::from_str_radix(int, radix).expect("expected i64 in numerical literal") as f64;
+    dbg!(v);
+
+    // parse and add up fractional part
+    if let Some(frac) = frac {
+        let shift = frac.len() as u32;
+        let frac = u64::from_str_radix(frac, radix)
+            .expect("expected u64 in frac part in numerical literal");
+        dbg!(&shift);
+        let frac = frac as f64 / radix.pow(shift) as f64;
+        v += frac;
+    };
+    dbg!(v);
+
+    // multiply with exponent part
+    if let Some(mantissa) = mantissa {
+        dbg!(mantissa);
+        v *= mantissa;
+    }
+    dbg!(v);
+
+    if neg {
+        Some(-v)
+    } else {
+        Some(v)
+    }
+}
+
+// test for parse_lua_number
+#[test]
+fn test_parse_lua_number() {
+    assert_eq!(parse_lua_number("3.0"), Some(3.0));
+    assert_eq!(parse_lua_number("3.1416"), Some(3.1416));
+    assert_eq!(parse_lua_number("314.16e-2"), Some(3.1416));
+    assert_eq!(parse_lua_number("0.31416E1"), Some(3.1416));
+    assert_eq!(parse_lua_number("34e1"), Some(340.0));
+    assert_eq!(parse_lua_number("0x0.1E"), Some(0.1171875));
+    assert_eq!(parse_lua_number("0xA23p-4"), Some(162.1875));
+    assert_eq!(
+        parse_lua_number("0X1.921FB54442D18P+1"),
+        Some(3.1415926535898)
+    );
 }

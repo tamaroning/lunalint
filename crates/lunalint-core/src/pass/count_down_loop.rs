@@ -23,10 +23,10 @@ impl CountDownLoop {
 
 impl Visitor for CountDownLoop {
     fn visit_numeric_for(&mut self, node: &full_moon::ast::NumericFor) {
-        let Some(start) = utils::to_integer(node.start()) else {
+        let Some(start) = utils::to_number(node.start()) else {
             return;
         };
-        let Some(end) = utils::to_integer(node.end()) else {
+        let Some(end) = utils::to_number(node.end()) else {
             return;
         };
         if node.step().is_some() {

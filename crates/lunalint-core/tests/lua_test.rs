@@ -28,3 +28,6 @@ macro_rules! lua_test {
 
 lua_test!(undefined_global);
 lua_test!(parse_error);
+lua_test!(count_down_loop);
+lua_test!(unicode_name);
+lua_test!(global_in_nil_env);

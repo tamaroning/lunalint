@@ -276,4 +276,25 @@ impl<'a> Visitor for Resolver {
             log::debug!("unresolved name: `{}`", name);
         }
     }
+
+    fn visit_generic_for(&mut self, node: &ast::GenericFor) {
+        for name in node.names() {
+            let node_id = NodeId::from(name);
+            let loc = Location::from((&self.src, name));
+            let name = utils::ident_as_str(name).to_owned();
+            let def = Definition::new(Visibility::Local, name.clone(), loc);
+            log::trace!("insert loop var decl {}", name);
+            self.insert_local_definiton(name, node_id, def);
+        }
+    }
+
+    fn visit_numeric_for(&mut self, node: &ast::NumericFor) {
+        let name = node.index_variable();
+        let node_id = NodeId::from(name);
+        let loc = Location::from((&self.src, name));
+        let name = utils::ident_as_str(name).to_owned();
+        let def = Definition::new(Visibility::Local, name.clone(), loc);
+        log::trace!("insert loop var decl {}", name);
+        self.insert_local_definiton(name, node_id, def);
+    }
 }

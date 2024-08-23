@@ -4,7 +4,7 @@ source: crates/lunalint-core/tests/lua_test.rs
 Error: Error occured while parsing (parse-error)
     ╭─[tests/lua/parse-error.lua:10:13]
     │
- 10 │             print("This will never print") -- Unreachable code
+ 10 │             print("This will never print")
     │             ──┬──  
     │               ╰──── Unexpected token `print`, expected 'end'
 ────╯

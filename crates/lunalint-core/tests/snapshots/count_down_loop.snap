@@ -1,0 +1,12 @@
+---
+source: crates/lunalint-core/tests/lua_test.rs
+---
+Error: Count down loop which never reaches end (count-down-loop)
+    ╭─[tests/lua/count-down-loop.lua:24:9]
+    │
+ 24 │ for i = 10, 1 do
+    │         ──┬──  
+    │           ╰──── Did you mean `10, 1, -1`?
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#count-down-loop
+────╯

@@ -7,7 +7,7 @@ function example_function(x)
         print("x is between 0 and 10")
         if x == 5 then
             return "x is exactly 5"
-            print("This will never print") -- Unreachable code
+            print("This will never print")
         else
             print("This is another else block")
         end

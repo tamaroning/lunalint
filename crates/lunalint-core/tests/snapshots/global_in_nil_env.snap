@@ -1,0 +1,12 @@
+---
+source: crates/lunalint-core/tests/lua_test.rs
+---
+Error: Invalid global (`_ENV` is `nil`) (global-in-nil-env)
+   ╭─[tests/lua/global-in-nil-env.lua:7:1]
+   │
+ 7 │ _ENV = nil
+   │ ──┬─  
+   │   ╰─── Assignment occurs here
+   │ 
+   │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#global-in-nil-env
+───╯
