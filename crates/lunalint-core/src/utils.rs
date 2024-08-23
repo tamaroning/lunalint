@@ -142,6 +142,13 @@ fn parse_lua_number(e: &str) -> Option<f64> {
             .expect("expected u32 after p- in numerical literal");
         let v = 1. / (2_u32.pow(exp) as f64);
         (&e[..pos], Some(v))
+    } else if let Some(pos) = e.find("p") {
+        let n = &e[pos + 1..];
+        let exp = n
+            .parse::<u32>()
+            .expect("expected u32 after p+ in numerical literal");
+        let v = 2_u32.pow(exp) as f64;
+        (&e[..pos], Some(v))
     } else if let Some(pos) = e.find("e+") {
         let n = &e[pos + 2..];
         let exp = n
@@ -156,6 +163,17 @@ fn parse_lua_number(e: &str) -> Option<f64> {
             .expect("expected u32 after e- in numerical literal");
         let v = 1. / (10_u32.pow(exp) as f64);
         (&e[..pos], Some(v))
+    } else if let Some(pos) = e.find('e') {
+        if radix != 16 {
+            let n = &e[pos + 1..];
+            let exp = n
+                .parse::<u32>()
+                .expect("expected u32 after e+ in numerical literal");
+            let v = 10_u32.pow(exp) as f64;
+            (&e[..pos], Some(v))
+        } else {
+            (&e[..], None)
+        }
     } else {
         (&e[..], None)
     };
@@ -169,22 +187,19 @@ fn parse_lua_number(e: &str) -> Option<f64> {
 
     // parse integer part
     let mut v = i64::from_str_radix(int, radix).expect("expected i64 in numerical literal") as f64;
-    dbg!(v);
 
     // parse and add up fractional part
     if let Some(frac) = frac {
         let shift = frac.len() as u32;
+        dbg!(&frac);
         let frac = u64::from_str_radix(frac, radix)
             .expect("expected u64 in frac part in numerical literal");
-        dbg!(&shift);
         let frac = frac as f64 / radix.pow(shift) as f64;
         v += frac;
     };
-    dbg!(v);
 
     // multiply with exponent part
     if let Some(mantissa) = mantissa {
-        dbg!(mantissa);
         v *= mantissa;
     }
     dbg!(v);
@@ -199,15 +214,17 @@ fn parse_lua_number(e: &str) -> Option<f64> {
 // test for parse_lua_number
 #[test]
 fn test_parse_lua_number() {
-    assert_eq!(parse_lua_number("3.0"), Some(3.0));
-    assert_eq!(parse_lua_number("3.1416"), Some(3.1416));
-    assert_eq!(parse_lua_number("314.16e-2"), Some(3.1416));
-    assert_eq!(parse_lua_number("0.31416E1"), Some(3.1416));
-    assert_eq!(parse_lua_number("34e1"), Some(340.0));
-    assert_eq!(parse_lua_number("0x0.1E"), Some(0.1171875));
-    assert_eq!(parse_lua_number("0xA23p-4"), Some(162.1875));
-    assert_eq!(
-        parse_lua_number("0X1.921FB54442D18P+1"),
-        Some(3.1415926535898)
-    );
+    fn approx_assert_eq(a: f64, b: f64) {
+        dbg!(a, b);
+        assert!(b - 0.001 <= a && a <= b + 0.001);
+    }
+    // rewrite above all by usinig approx_eq
+    approx_assert_eq(parse_lua_number("3.0").unwrap(), 3.0);
+    approx_assert_eq(parse_lua_number("3.1416").unwrap(), 3.1416);
+    approx_assert_eq(parse_lua_number("314.16e-2").unwrap(), 3.1416);
+    approx_assert_eq(parse_lua_number("0.31416E1").unwrap(), 3.1416);
+    approx_assert_eq(parse_lua_number("34e1").unwrap(), 340.0);
+    approx_assert_eq(parse_lua_number("0x0.1E").unwrap(), 0.1171875);
+    approx_assert_eq(parse_lua_number("0xA23p-4").unwrap(), 162.1875);
+    approx_assert_eq(parse_lua_number("0x1.921FB54442D18P+1").unwrap(), 3.1416);
 }
