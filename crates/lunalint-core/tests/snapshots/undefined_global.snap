@@ -10,3 +10,12 @@ Error: Undefined global `FOO_BAR2` (undefined-global)
    │ 
    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#undefined-global
 ───╯
+Error: Undefined global `local_var2` (undefined-global)
+   ╭─[tests/lua/undefined-global.lua:8:23]
+   │
+ 8 │     VAR = local_var + local_var2
+   │                       ─────┬────  
+   │                            ╰────── Did you mean `load`?
+   │ 
+   │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#undefined-global
+───╯
