@@ -2,11 +2,29 @@
 source: crates/lunalint-core/tests/lua_test.rs
 ---
 Error: Count down loop which never reaches end (count-down-loop)
-    ╭─[tests/lua/count-down-loop.lua:24:9]
+    ╭─[tests/lua/count-down-loop.lua:35:9]
     │
- 24 │ for i = 10, 1 do
+ 35 │ for i = 10, 1 do
     │         ──┬──  
-    │           ╰──── Did you mean `10, 1, -1`?
+    │           ╰──── Did you mean `10, 1 , -1`?
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#count-down-loop
+────╯
+Error: Count down loop which never reaches end (count-down-loop)
+    ╭─[tests/lua/count-down-loop.lua:39:9]
+    │
+ 39 │ for i = 10, -0x99999999999999999999999 do
+    │         ───────────────┬──────────────  
+    │                        ╰──────────────── Did you mean `10, -0x99999999999999999999999 , -1`?
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#count-down-loop
+────╯
+Error: Count down loop which never reaches end (count-down-loop)
+    ╭─[tests/lua/count-down-loop.lua:44:9]
+    │
+ 44 │ for i = 0x99999999999999999999999, 0 do
+    │         ──────────────┬─────────────  
+    │                       ╰─────────────── Did you mean `0x99999999999999999999999, 0 , -1`?
     │ 
     │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#count-down-loop
 ────╯

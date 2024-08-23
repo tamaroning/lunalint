@@ -2,6 +2,10 @@ use full_moon::{
     ast::{self, Expression},
     tokenizer::{Symbol, TokenReference, TokenType},
 };
+use num_bigint::{BigInt, BigUint};
+use num_rational::Ratio;
+use num_traits::Num;
+use num_traits::ToPrimitive;
 
 // Basic functions
 // https://www.lua.org/manual/5.4/manual.html#6.1
@@ -93,28 +97,27 @@ pub(super) fn is_nil(e: &ast::Expression) -> bool {
     }
 }
 
-pub(super) fn to_number(e: &Expression) -> Option<f64> {
+pub(super) fn to_number(e: &Expression) -> Option<Ratio<BigInt>> {
     match e {
         Expression::Number(n) => match n.token_type() {
             TokenType::Number { text } => parse_lua_number(text.as_str()),
             _ => None,
         },
+        Expression::UnaryOperator { unop, expression } => {
+            if matches!(unop, ast::UnOp::Minus(_)) {
+                to_number(expression).map(|n| -n)
+            } else {
+                None
+            }
+        }
         _ => None,
     }
 }
 
-fn parse_lua_number(e: &str) -> Option<f64> {
+// FIXME: remove parsing sign as it is a unary operator
+fn parse_lua_number(e: &str) -> Option<Ratio<BigInt>> {
     // Convert to lowercase for simplicity
     let e = e.to_ascii_lowercase();
-
-    // Check and strip sign
-    let (e, neg) = if e.starts_with('-') {
-        (&e[1..], true)
-    } else if e.starts_with('+') {
-        (&e[1..], false)
-    } else {
-        (&e[..], false)
-    };
 
     // Check and strip hex, binary, octal prefix
     let (e, radix): (_, u32) = if e.starts_with("0x") {
@@ -124,53 +127,56 @@ fn parse_lua_number(e: &str) -> Option<f64> {
     } else if e.starts_with("0o") {
         (&e[2..], 8)
     } else {
-        (e, 10)
+        (&e, 10)
     };
 
     // Retrieve exponent part if any. e.g. p+0, e-9
     let (e, mantissa) = if let Some(pos) = e.find("p+") {
         let n = &e[pos + 2..];
-        let exp = n
-            .parse::<u32>()
-            .expect("expected u32 after p+ in numerical literal");
-        let v = 2_u32.pow(exp) as f64;
-        (&e[..pos], Some(v))
+        let exp = BigUint::from_str_radix(n, radix).unwrap();
+        let Some(exp) = exp.to_u32() else {
+            return None;
+        };
+        let v = BigUint::from(2_u32).pow(exp);
+        (&e[..pos], Some(Ratio::new(v.into(), BigInt::from(1))))
     } else if let Some(pos) = e.find("p-") {
         let n = &e[pos + 2..];
-        let exp = n
-            .parse::<u32>()
-            .expect("expected u32 after p- in numerical literal");
-        let v = 1. / (2_u32.pow(exp) as f64);
-        (&e[..pos], Some(v))
+        let Some(exp) = BigUint::from_str_radix(n, radix).unwrap().to_u32() else {
+            return None;
+        };
+        let v = BigUint::from(2_u32).pow(exp);
+        (&e[..pos], Some(Ratio::new(BigInt::from(1), v.into())))
     } else if let Some(pos) = e.find("p") {
         let n = &e[pos + 1..];
-        let exp = n
-            .parse::<u32>()
-            .expect("expected u32 after p+ in numerical literal");
-        let v = 2_u32.pow(exp) as f64;
-        (&e[..pos], Some(v))
+        let Some(exp) = BigUint::from_str_radix(n, radix).unwrap().to_u32() else {
+            return None;
+        };
+        let v = BigUint::from(2_u32).pow(exp);
+        (&e[..pos], Some(Ratio::new(v.into(), BigInt::from(1))))
     } else if let Some(pos) = e.find("e+") {
         let n = &e[pos + 2..];
-        let exp = n
-            .parse::<u32>()
-            .expect("expected u32 after e+ in numerical literal");
-        let v = 10_u32.pow(exp) as f64;
-        (&e[..pos], Some(v))
+        let Some(exp) = BigUint::from_str_radix(n, radix).unwrap().to_u32() else {
+            return None;
+        };
+        let v = BigUint::from(10_u32).pow(exp);
+        (&e[..pos], Some(Ratio::new(v.into(), BigInt::from(1))))
     } else if let Some(pos) = e.find("e-") {
         let n = &e[pos + 2..];
-        let exp = n
-            .parse::<u32>()
-            .expect("expected u32 after e- in numerical literal");
-        let v = 1. / (10_u32.pow(exp) as f64);
-        (&e[..pos], Some(v))
+        let Some(exp) = BigUint::from_str_radix(n, radix).unwrap().to_u32() else {
+            // fractional part is too big
+            return None;
+        };
+        let v = BigUint::from(10_u32).pow(exp);
+        (&e[..pos], Some(Ratio::new(BigInt::from(1), v.into())))
     } else if let Some(pos) = e.find('e') {
         if radix != 16 {
             let n = &e[pos + 1..];
-            let exp = n
-                .parse::<u32>()
-                .expect("expected u32 after e+ in numerical literal");
-            let v = 10_u32.pow(exp) as f64;
-            (&e[..pos], Some(v))
+            let exp = BigUint::from_str_radix(n, radix).unwrap();
+            let Some(exp) = exp.to_u32() else {
+                return None;
+            };
+            let v = BigUint::from(10_u32).pow(exp);
+            (&e[..pos], Some(Ratio::new(v.into(), BigInt::from(1))))
         } else {
             (&e[..], None)
         }
@@ -186,39 +192,41 @@ fn parse_lua_number(e: &str) -> Option<f64> {
     };
 
     // parse integer part
-    let mut v = i64::from_str_radix(int, radix).expect("expected i64 in numerical literal") as f64;
+    let mut v = Ratio::new(BigInt::from_str_radix(int, radix).unwrap(), BigInt::from(1));
 
     // parse and add up fractional part
     if let Some(frac) = frac {
-        let shift = frac.len() as u32;
-        dbg!(&frac);
-        let frac = u64::from_str_radix(frac, radix)
+        let Some(shift) = BigUint::from(frac.len()).to_u32() else {
+            // fractional part is too long
+            return None;
+        };
+        let frac = BigInt::from_str_radix(frac, radix)
             .expect("expected u64 in frac part in numerical literal");
-        let frac = frac as f64 / radix.pow(shift) as f64;
+        let radix = BigInt::from(radix);
+        let frac = Ratio::new(frac, radix.pow(shift));
         v += frac;
     };
 
     // multiply with exponent part
     if let Some(mantissa) = mantissa {
-        v *= mantissa;
+        v *= &mantissa;
     }
-    dbg!(v);
 
-    if neg {
-        Some(-v)
-    } else {
-        Some(v)
-    }
+    Some(v)
 }
 
-// test for parse_lua_number
 #[test]
 fn test_parse_lua_number() {
-    fn approx_assert_eq(a: f64, b: f64) {
-        dbg!(a, b);
-        assert!(b - 0.001 <= a && a <= b + 0.001);
+    fn approx_assert_eq(f: Ratio<BigInt>, expected: f64) {
+        let e = Ratio::from_float(expected).unwrap();
+        let eps = Ratio::from_float(0.001).unwrap();
+        assert!(&e - &eps <= f && f <= e + eps);
     }
-    // rewrite above all by usinig approx_eq
+    approx_assert_eq(parse_lua_number("1").unwrap(), 1.0);
+    approx_assert_eq(parse_lua_number("0x99999").unwrap(), 0x99999 as f64);
+
+    // tests from lua manual
+    // See https://www.lua.org/manual/5.4/manual.html
     approx_assert_eq(parse_lua_number("3.0").unwrap(), 3.0);
     approx_assert_eq(parse_lua_number("3.1416").unwrap(), 3.1416);
     approx_assert_eq(parse_lua_number("314.16e-2").unwrap(), 3.1416);

@@ -12,6 +12,8 @@ log = "0.4.22"
 ariadne = { version = "0.4.1", features = ["auto-color"] }
 parking_lot = "0.12.3"
 num-bigint = "0.4.6"
+num-traits = "0.2.19"
+num-rational = "0.4.2"
 
 [dev-dependencies]
 insta = "1.39.0"

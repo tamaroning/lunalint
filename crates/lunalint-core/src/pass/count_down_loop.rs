@@ -36,6 +36,7 @@ impl Visitor for CountDownLoop {
         if start > end {
             let loc = Location::from((self.ctx().src(), node.start().tokens()))
                 + Location::from((self.ctx().src(), node.end().tokens()));
+            // Keep original snippet of the start and end expressions
             emit_report(
                 self,
                 LintReport::new(
@@ -45,7 +46,11 @@ impl Visitor for CountDownLoop {
                 )
                 .with_label(LintLabel::new(
                     loc,
-                    format!("Did you mean `{}, {}, -1`?", start, end),
+                    format!(
+                        "Did you mean `{}, {}, -1`?",
+                        node.start().to_string(),
+                        node.end().to_string()
+                    ),
                 )),
             );
         }
