@@ -32,7 +32,7 @@ impl Context {
     }
 
     pub fn saw_error(&self) -> bool {
-        self.reports.lock().is_empty()
+        !self.reports.lock().is_empty()
     }
 
     pub fn push_report(&self, report: LintReport) {
