@@ -1,0 +1,12 @@
+---
+source: crates/lunalint-core/tests/lua_test.rs
+---
+Error: Undefined global `loc` (undefined-global)
+   ╭─[tests/lua/undefined-global3.lua:2:7]
+   │
+ 2 │ print(loc)
+   │       ─┬─  
+   │        ╰─── Did you mean `load`?
+   │ 
+   │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#undefined-global
+───╯

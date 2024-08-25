@@ -20,3 +20,8 @@ bar.i = 2
 
 -- NG
 kSomeConstant = 1
+
+-- OK
+Česká = "czech"
+-- NG
+večer = 1

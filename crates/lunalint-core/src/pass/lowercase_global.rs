@@ -27,7 +27,7 @@ fn check_name(pass: &LowercaseGlobal, def_id: NodeId) {
     };
 
     let first_char = def.name().chars().next().unwrap();
-    if def.visibility() == Visibility::Global && first_char.is_ascii_lowercase() {
+    if def.visibility() == Visibility::Global && first_char.is_lowercase() {
         let loc = def.loc();
         let name = def.name();
         emit_report(

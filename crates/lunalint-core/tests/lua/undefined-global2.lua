@@ -1,4 +1,5 @@
 function f2()
+    -- OK
     print(G2)
 end
 
@@ -8,3 +9,6 @@ end
 
 f()
 f2()
+
+-- OK
+print(G2)

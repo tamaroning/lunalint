@@ -30,6 +30,15 @@ fn check_name(pass: &UndefinedGlobal, name: &str, use_: NodeId, loc: Location) {
     if pass.ctx().resolver().lookup_definiton(use_).is_some() {
         return;
     }
+    {
+        let globals = pass.ctx().resolver().get_global_scope();
+        let globals = globals.lock();
+        if globals.contains_key(name) {
+            return;
+        }
+        // release lock
+    }
+
     let mut report = LintReport::new(pass, loc.clone(), format!("Undefined global `{name}`"));
 
     let current_block = pass.current_block.last().unwrap();
@@ -54,7 +63,7 @@ impl Visitor for UndefinedGlobal {
         self.current_block.push(node_id);
     }
 
-    fn visit_block_end(&mut self, node: &ast::Block) {
+    fn visit_block_end(&mut self, _node: &ast::Block) {
         self.current_block.pop();
     }
 

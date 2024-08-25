@@ -1,6 +1,24 @@
 ---
 source: crates/lunalint-core/tests/lua_test.rs
 ---
+Error: Unicode name `Česká` (unicode-name)
+    ╭─[tests/lua/lowercase-global.lua:25:1]
+    │
+ 25 │ Česká = "czech"
+    │ ───┬───  
+    │    ╰───── Only ASCII characters are allowed
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/syntax-errors/#unicode-name
+────╯
+Error: Unicode name `večer` (unicode-name)
+    ╭─[tests/lua/lowercase-global.lua:27:3]
+    │
+ 27 │ večer = 1
+    │   ───┬──  
+    │      ╰──── Only ASCII characters are allowed
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/syntax-errors/#unicode-name
+────╯
 Error: Global variable `bar` starts with a lowercase letter (lowercase-global)
     ╭─[tests/lua/lowercase-global.lua:15:1]
     │
@@ -16,6 +34,15 @@ Error: Global variable `kSomeConstant` starts with a lowercase letter (lowercase
  22 │ kSomeConstant = 1
     │ ──────┬──────  
     │       ╰──────── Global variables should start with an uppercase letter
+    │ 
+    │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#lowercase-global
+────╯
+Error: Global variable `večer` starts with a lowercase letter (lowercase-global)
+    ╭─[tests/lua/lowercase-global.lua:27:3]
+    │
+ 27 │ večer = 1
+    │   ───┬──  
+    │      ╰──── Global variables should start with an uppercase letter
     │ 
     │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#lowercase-global
 ────╯

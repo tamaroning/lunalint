@@ -28,7 +28,10 @@ impl std::fmt::Debug for NodeId {
 
 impl NodeId {
     pub fn from(node: &dyn Node) -> Self {
-        let range = node.range().unwrap();
+        let Some(range) = node.range() else {
+            log::debug!("node range not found: {:?}", node.start_position());
+            return NodeId { private: (0, 0) };
+        };
         NodeId {
             private: (range.0.bytes(), range.1.bytes()),
         }
@@ -136,6 +139,10 @@ impl Resolver {
 
     pub fn lookup_scope(&self, block: NodeId) -> Option<&Vec<Scope>> {
         self.block_to_scope.get(&block)
+    }
+
+    pub fn get_global_scope(&self) -> &Scope {
+        self.scopes.first().unwrap()
     }
 
     fn lookup_name(&self, name: &str) -> Option<NodeId> {

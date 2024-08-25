@@ -1,4 +1,12 @@
 ---
 source: crates/lunalint-core/tests/lua_test.rs
 ---
-
+Error: Unicode name `Česká` (unicode-name)
+   ╭─[tests/lua/unicode-name.lua:5:1]
+   │
+ 5 │ Česká = "czech"
+   │ ───┬───  
+   │    ╰───── Only ASCII characters are allowed
+   │ 
+   │ Help: for further information visit https://luals.github.io/wiki/syntax-errors/#unicode-name
+───╯
