@@ -1,6 +1,8 @@
 FOO_BAR = 42
 
+-- OK
 OK = FOO_BAR
+-- NG
 NG = FOO_BAR2
 
 do

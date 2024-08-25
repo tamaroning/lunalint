@@ -87,6 +87,9 @@ pub struct Resolver {
     src: Arc<SourceInfo>,
 }
 
+/// Name resolution is splited into two steps:
+/// 1. Get all definitions (local variables, global variables, functions)
+/// 2. Resolve uses of variables
 impl Resolver {
     pub fn new(src: Arc<SourceInfo>) -> Self {
         Resolver {
@@ -167,11 +170,11 @@ impl<'a> Visitor for Resolver {
         ast.eof().visit(self);
     }
 
-    fn visit_do(&mut self, _node: &ast::Do) {
+    fn visit_block(&mut self, _node: &ast::Block) {
         self.push_scope();
     }
 
-    fn visit_do_end(&mut self, _node: &ast::Do) {
+    fn visit_block_end(&mut self, _node: &ast::Block) {
         self.pop_scope();
     }
 
