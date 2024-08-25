@@ -8,6 +8,7 @@ use full_moon::{ast, node::Node, visitors::Visitor};
 
 pub struct UndefinedGlobal {
     ctx: Arc<Context>,
+    current_block: Vec<NodeId>,
 }
 impl_lint_pass!(
     "undefined-global",
@@ -18,7 +19,10 @@ impl_lint_pass!(
 
 impl UndefinedGlobal {
     pub fn new(ctx: Arc<Context>) -> Self {
-        Self { ctx }
+        Self {
+            ctx,
+            current_block: vec![],
+        }
     }
 }
 
@@ -26,12 +30,10 @@ fn check_name(pass: &UndefinedGlobal, name: &str, use_: NodeId, loc: Location) {
     if pass.ctx().resolver().lookup_definiton(use_).is_some() {
         return;
     }
-    if utils::builtin_names().contains(&name) {
-        return;
-    }
     let mut report = LintReport::new(pass, loc.clone(), format!("Undefined global `{name}`"));
 
-    if let Some(suggestion) = get_wrong_name_suggestion(pass.ctx(), name) {
+    let current_block = pass.current_block.last().unwrap();
+    if let Some(suggestion) = get_wrong_name_suggestion(pass.ctx(), *current_block, name) {
         report = report.with_label(LintLabel::new(
             loc,
             format!("Did you mean `{}`?", suggestion),
@@ -47,16 +49,20 @@ fn check_name(pass: &UndefinedGlobal, name: &str, use_: NodeId, loc: Location) {
 }
 
 impl Visitor for UndefinedGlobal {
+    fn visit_block(&mut self, node: &ast::Block) {
+        let node_id = NodeId::from(node);
+        self.current_block.push(node_id);
+    }
+
+    fn visit_block_end(&mut self, node: &ast::Block) {
+        self.current_block.pop();
+    }
+
     fn visit_var(&mut self, node: &ast::Var) {
         let ast::Var::Name(name) = node else {
             return;
         };
         let name = utils::ident_as_str(name);
-        // Allow builtin names to be undefined
-        if utils::builtin_names().contains(&name) {
-            return;
-        }
-
         let node_id = NodeId::from(node);
         let loc = Location::from((self.ctx().src(), node.tokens()));
         check_name(self, name, node_id, loc);
@@ -67,37 +73,31 @@ impl Visitor for UndefinedGlobal {
             return;
         };
         let name = utils::ident_as_str(name);
-        // Allow builtin names to be undefined
-        if utils::builtin_names().contains(&name) {
-            return;
-        }
-
         let node_id = NodeId::from(prefix);
         let loc = Location::from((self.ctx().src(), prefix.tokens()));
         check_name(self, name, node_id, loc);
     }
 }
 
-fn get_wrong_name_suggestion<'a>(ctx: &'a Context, name: &str) -> Option<&'a str> {
+fn get_wrong_name_suggestion<'a>(
+    ctx: &'a Context,
+    current_block: NodeId,
+    name: &str,
+) -> Option<String> {
     let mut min_distance = usize::MAX;
-    let mut suggestion: Option<&str> = None;
-    let mut found_names: Vec<&str> = Vec::new();
-    for scope in ctx.resolver().get_scopes() {
+    let mut suggestion = None;
+    for scope in ctx.resolver().lookup_scope(current_block).unwrap() {
+        let scope = scope.lock();
         for found in scope.keys() {
-            found_names.push(found);
-        }
-    }
-    found_names.extend(utils::builtin_names());
-
-    for found in found_names {
-        if found == name {
-            // Use before definiton
-            continue;
-        }
-        let distance = levenshtein_distance(name, found);
-        if distance < min_distance {
-            min_distance = distance;
-            suggestion = Some(found);
+            if found == name {
+                // Use before definiton
+                continue;
+            }
+            let distance = levenshtein_distance(name, found);
+            if distance < min_distance {
+                min_distance = distance;
+                suggestion = Some(found.to_string());
+            }
         }
     }
     suggestion

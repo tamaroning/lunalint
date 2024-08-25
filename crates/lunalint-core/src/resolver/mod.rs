@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use full_moon::visitors::Visit;
 use full_moon::{ast, node::Node, visitors::Visitor};
+use parking_lot::Mutex;
 
 use crate::location::{Location, SourceInfo};
 use crate::utils;
@@ -69,20 +70,25 @@ pub enum Visibility {
     Function,
 }
 
+pub type Scope = Arc<Mutex<HashMap<String, NodeId>>>;
+
 #[derive(Debug)]
 pub struct Resolver {
-    // Use-Def relations
+    /// Use-Def relations
     use_defs: HashMap<NodeId, NodeId>,
-    // Def-Use relations
+    /// Def-Use relations
     def_uses: HashMap<NodeId, Vec<NodeId>>,
 
-    // Assignment relations
-    // e.g. foo = 1; foo = 2
-    // relation: foo (second occurence) -> foo (first occurence)
+    /// Assignment relations
+    /// e.g. foo = 1; foo = 2
+    /// relation: foo (second occurence) -> foo (first occurence)
     reassignments: HashMap<NodeId, NodeId>,
 
+    /// Block to scope mapping
+    block_to_scope: HashMap<NodeId, Vec<Scope>>,
+
     // current lexical scope. After resolving, the first scope only remains
-    scopes: Vec<HashMap<String, NodeId>>,
+    scopes: Vec<Scope>,
     definitions: HashMap<NodeId, Definition>,
     src: Arc<SourceInfo>,
 }
@@ -96,6 +102,7 @@ impl Resolver {
             use_defs: HashMap::new(),
             def_uses: HashMap::new(),
             reassignments: HashMap::new(),
+            block_to_scope: HashMap::new(),
             scopes: Vec::new(),
             definitions: HashMap::new(),
             src,
@@ -127,13 +134,13 @@ impl Resolver {
         self.definitions.get(&def_id)
     }
 
-    pub fn get_scopes(&self) -> &Vec<HashMap<String, NodeId>> {
-        assert!(self.scopes.len() == 1);
-        &self.scopes
+    pub fn lookup_scope(&self, block: NodeId) -> Option<&Vec<Scope>> {
+        self.block_to_scope.get(&block)
     }
 
     fn lookup_name(&self, name: &str) -> Option<NodeId> {
         for scope in self.scopes.iter().rev() {
+            let scope = scope.lock();
             if let Some(node_id) = scope.get(name) {
                 return Some(*node_id);
             }
@@ -142,7 +149,7 @@ impl Resolver {
     }
 
     fn push_scope(&mut self) {
-        self.scopes.push(HashMap::new());
+        self.scopes.push(Arc::new(Mutex::new(HashMap::new())));
     }
 
     fn pop_scope(&mut self) {
@@ -151,12 +158,14 @@ impl Resolver {
 
     fn insert_local_definiton(&mut self, name: String, node_id: NodeId, def: Definition) {
         let last_scope = self.scopes.last_mut().unwrap();
+        let mut last_scope = last_scope.lock();
         last_scope.insert(name, node_id);
         self.definitions.insert(node_id, def);
     }
 
     fn insert_global_definition(&mut self, name: String, node_id: NodeId, def: Definition) {
         let first_scope = self.scopes.first_mut().unwrap();
+        let mut first_scope = first_scope.lock();
         first_scope.insert(name, node_id);
         self.definitions.insert(node_id, def);
     }
@@ -166,6 +175,12 @@ impl<'a> Visitor for Resolver {
     fn visit_ast(&mut self, ast: &ast::Ast) {
         // push the first lexical scope
         self.push_scope();
+        for name in utils::builtin_names() {
+            let def = Definition::new(Visibility::Global, name.to_owned(), Location::dummy());
+            let node_id = NodeId::from(ast);
+            self.insert_global_definition(name.to_owned(), node_id, def);
+        }
+
         ast.nodes().visit(self);
         ast.eof().visit(self);
     }
@@ -174,7 +189,9 @@ impl<'a> Visitor for Resolver {
         self.push_scope();
     }
 
-    fn visit_block_end(&mut self, _node: &ast::Block) {
+    fn visit_block_end(&mut self, node: &ast::Block) {
+        let node_id = NodeId::from(node);
+        self.block_to_scope.insert(node_id, self.scopes.clone());
         self.pop_scope();
     }
 

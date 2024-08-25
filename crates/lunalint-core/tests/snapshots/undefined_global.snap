@@ -15,7 +15,7 @@ Error: Undefined global `local_var2` (undefined-global)
     │
  10 │     VAR = local_var + local_var2
     │                       ─────┬────  
-    │                            ╰────── Did you mean `load`?
+    │                            ╰────── Did you mean `local_var`?
     │ 
     │ Help: for further information visit https://luals.github.io/wiki/diagnostics/#undefined-global
 ────╯
